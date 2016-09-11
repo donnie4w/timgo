@@ -54,7 +54,7 @@ func clientTest(ip, port, fromname, pwd, toname string) {
 	}
 
 	for i := 1; i < 9999; i++ {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 		msg := fmt.Sprint(fromname, "=====>", toname, ":", i)
 		err = cli.Sendmsg(toname, &msg)
 		if err != nil {
