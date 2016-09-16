@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"os"
@@ -69,10 +70,11 @@ type Cli struct {
 	Flow    FLOW
 	Addr    string
 	conf    *Conf
+	TLSAddr string
 }
 
-func NewCli(addr string) (Timc *Cli) {
-	Timc = &Cli{Sync: new(sync.Mutex), Flow: AUTH, Addr: addr}
+func NewCli(addr, tlsAddr string) (Timc *Cli) {
+	Timc = &Cli{Sync: new(sync.Mutex), Flow: AUTH, Addr: addr, TLSAddr: tlsAddr}
 	return
 }
 
@@ -228,19 +230,52 @@ func Ping(this *Cli) (err error) {
 	return
 }
 
+func getTransport(addr string) (transport *thrift.TSocket, err error) {
+	transport, err = thrift.NewTSocket(addr)
+	return
+}
+
+func getTSSLTransport(addr string) (transport *thrift.TSSLSocket, err error) {
+	conf := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	transport, err = thrift.NewTSSLSocket(addr, conf)
+	return
+}
+
 func (this *Cli) Login() error {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error(string(debug.Stack()))
 		}
 	}()
+
 	transportFactory := thrift.NewTBufferedTransportFactory(1024)
 	protocolFactory := thrift.NewTCompactProtocolFactory()
-	transport, err := thrift.NewTSocket(this.Addr)
-	if err != nil {
-		return err
+
+	var useTransport thrift.TTransport
+	if this.TLSAddr == "" {
+		transport, err := getTransport(this.Addr)
+		if err != nil {
+			return err
+		}
+		if err := transport.Open(); err != nil {
+			fmt.Fprintln(os.Stderr, "Error opening socket to ", this.Addr, " ", err)
+			return err
+		}
+		useTransport = transportFactory.GetTransport(transport)
+	} else {
+		transport, err := getTSSLTransport(this.TLSAddr)
+		if err != nil {
+			return err
+		}
+		if err := transport.Open(); err != nil {
+			fmt.Fprintln(os.Stderr, "Error opening socket to ", this.TLSAddr, " ", err)
+			return err
+		}
+		useTransport = transportFactory.GetTransport(transport)
 	}
-	useTransport := transportFactory.GetTransport(transport)
+
 	timclient := NewITimClientFactory(useTransport, protocolFactory)
 	if this.Connect != nil {
 		this.Connect.Close()
@@ -248,10 +283,7 @@ func (this *Cli) Login() error {
 	this.Connect = &Connect{FlowConnect: CONNECT_START}
 	this.Connect.setITimClient(timclient)
 	this.Connect.Super = this
-	if err := transport.Open(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error opening socket to ", this.Addr, " ", err)
-		return err
-	}
+
 	processorchan := make(chan int)
 	go this.Connect.processor(processorchan)
 	pro := <-processorchan
@@ -262,7 +294,7 @@ func (this *Cli) Login() error {
 	domain, resource := this.conf.Domain, this.conf.Resource
 	tid.Domain, tid.Resource = &domain, &resource
 	tid.Name = this.conf.Name
-	err = Login(this, tid)
+	err := Login(this, tid)
 	if err != nil {
 		logger.Error("login err", err)
 		return err
@@ -318,12 +350,12 @@ func (this *Connect) processor(processorchan chan int) {
 }
 
 func ReConn(cli *Cli) (client *Cli) {
-	client, _ = NewConn(cli.Addr, cli.conf)
+	client, _ = NewConn(cli.Addr, cli.conf, cli.TLSAddr)
 	return
 }
 
-func NewConn(addr string, conf *Conf) (cli *Cli, err error) {
-	cli = NewCli(addr)
+func NewConn(addr string, conf *Conf, tlsAddr string) (cli *Cli, err error) {
+	cli = NewCli(addr, tlsAddr)
 	cli.conf = conf
 	err = cli.Login()
 	if err == nil {
