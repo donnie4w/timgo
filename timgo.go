@@ -11,6 +11,8 @@ import (
 )
 
 func main() {
+	fmt.Println("versionName:", ProtocolversionName)
+
 	flag.Parse()
 	ip := flag.Arg(0)       //服务器ip地址
 	port := flag.Arg(1)     //服务器端口

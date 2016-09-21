@@ -680,7 +680,7 @@ func (p *ITimClient) sendTimProperty(tpb *TimPropertyBean) (err error) {
 		p.OutputProtocol = oprot
 	}
 	p.SeqId++
-	if err = oprot.WriteMessageBegin("TimProperty", thrift.ONEWAY, p.SeqId); err != nil {
+	if err = oprot.WriteMessageBegin("timProperty", thrift.ONEWAY, p.SeqId); err != nil {
 		return
 	}
 	args := ITimTimPropertyArgs{
@@ -1385,7 +1385,7 @@ func NewITimProcessor(handler ITim) *ITimProcessor {
 	self72.processorMap["timPresenceList"] = &iTimProcessorTimPresenceList{handler: handler}
 	self72.processorMap["timMessageIq"] = &iTimProcessorTimMessageIq{handler: handler}
 	self72.processorMap["timMessageResult"] = &iTimProcessorTimMessageResult_{handler: handler}
-	self72.processorMap["TimProperty"] = &iTimProcessorTimProperty{handler: handler}
+	self72.processorMap["timProperty"] = &iTimProcessorTimProperty{handler: handler}
 	self72.processorMap["timRemoteUserAuth"] = &iTimProcessorTimRemoteUserAuth{handler: handler}
 	self72.processorMap["timRemoteUserGet"] = &iTimProcessorTimRemoteUserGet{handler: handler}
 	self72.processorMap["timRemoteUserEdit"] = &iTimProcessorTimRemoteUserEdit{handler: handler}
@@ -3660,7 +3660,7 @@ func (p *ITimTimPropertyArgs) readField1(iprot thrift.TProtocol) error {
 }
 
 func (p *ITimTimPropertyArgs) Write(oprot thrift.TProtocol) error {
-	if err := oprot.WriteStructBegin("TimProperty_args"); err != nil {
+	if err := oprot.WriteStructBegin("timProperty_args"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
 	if err := p.writeField1(oprot); err != nil {
