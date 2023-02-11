@@ -1,10 +1,12 @@
 package client
 
 import (
+	"context"
 	"runtime/debug"
 
+	. "timgo/protocol"
+
 	"github.com/donnie4w/go-logger/logger"
-	. "timgo.protocol"
 )
 
 type TimImpl struct {
@@ -16,17 +18,17 @@ type TimImpl struct {
 
 // Parameters:
 //  - Param
-func (this *TimImpl) TimStream(param *TimParam) (err error) {
+func (this *TimImpl) TimStream(ctx context.Context, param *TimParam) (err error) {
 	return
 }
-func (this *TimImpl) TimStarttls() (err error) {
+func (this *TimImpl) TimStarttls(ctx context.Context) (err error) {
 	return
 }
 
 // Parameters:
 //  - Tid
 //  - Pwd
-func (this *TimImpl) TimLogin(tid *Tid, pwd string) (err error) {
+func (this *TimImpl) TimLogin(ctx context.Context, tid *Tid, pwd string) (err error) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Error("Login error", err)
@@ -39,7 +41,7 @@ func (this *TimImpl) TimLogin(tid *Tid, pwd string) (err error) {
 
 // Parameters:
 //  - Ab
-func (this *TimImpl) TimAck(ab *TimAckBean) (err error) {
+func (this *TimImpl) TimAck(ctx context.Context, ab *TimAckBean) (err error) {
 	if ab != nil {
 		switch *ab.AckType {
 		case "login":
@@ -58,7 +60,7 @@ func (this *TimImpl) TimAck(ab *TimAckBean) (err error) {
 
 // Parameters:
 //  - Pbean
-func (this *TimImpl) TimPresence(pbean *TimPBean) (err error) {
+func (this *TimImpl) TimPresence(ctx context.Context, pbean *TimPBean) (err error) {
 	id := pbean.ThreadId
 	ab := NewTimAckBean()
 	ab.ID = &id
@@ -83,7 +85,7 @@ func (this *TimImpl) TimPresence(pbean *TimPBean) (err error) {
 
 // Parameters:
 //  - Mbean
-func (this *TimImpl) TimMessage(mbean *TimMBean) (err error) {
+func (this *TimImpl) TimMessage(ctx context.Context, mbean *TimMBean) (err error) {
 	ab := NewTimAckBean()
 	id := mbean.ThreadId
 	ab.ID = &id
@@ -96,7 +98,7 @@ func (this *TimImpl) TimMessage(mbean *TimMBean) (err error) {
 
 // Parameters:
 //  - ThreadId
-func (this *TimImpl) TimPing(threadId string) (err error) {
+func (this *TimImpl) TimPing(ctx context.Context, threadId string) (err error) {
 	ab := new(TimAckBean)
 	ab.ID = &threadId
 	acktype, ackstatus := "ping", "200"
@@ -107,77 +109,76 @@ func (this *TimImpl) TimPing(threadId string) (err error) {
 
 // Parameters:
 //  - E
-func (this *TimImpl) TimError(e *TimError) (err error) {
+func (this *TimImpl) TimError(ctx context.Context, e *TimError) (err error) {
 	return
 }
-func (this *TimImpl) TimLogout() (err error) {
-	return
-}
-
-// Parameters:
-//  - Tid
-//  - Pwd
-func (this *TimImpl) TimRegist(tid *Tid, pwd string) (err error) {
+func (this *TimImpl) TimLogout(ctx context.Context) (err error) {
 	return
 }
 
 // Parameters:
 //  - Tid
 //  - Pwd
-func (this *TimImpl) TimRemoteUserAuth(tid *Tid, pwd string, auth *TimAuth) (r *TimRemoteUserBean, err error) {
+func (this *TimImpl) TimRegist(ctx context.Context, tid *Tid, pwd string) (err error) {
 	return
 }
 
 // Parameters:
 //  - Tid
-func (this *TimImpl) TimRemoteUserGet(tid *Tid, auth *TimAuth) (r *TimRemoteUserBean, err error) {
+//  - Pwd
+func (this *TimImpl) TimRemoteUserAuth(ctx context.Context, tid *Tid, pwd string, auth *TimAuth) (r *TimRemoteUserBean, err error) {
+	return
+}
+
+// Parameters:
+//  - Tid
+func (this *TimImpl) TimRemoteUserGet(ctx context.Context, tid *Tid, auth *TimAuth) (r *TimRemoteUserBean, err error) {
 	return
 }
 
 // Parameters:
 //  - Tid
 //  - Ub
-func (this *TimImpl) TimRemoteUserEdit(tid *Tid, ub *TimUserBean, auth *TimAuth) (r *TimRemoteUserBean, err error) {
+func (this *TimImpl) TimRemoteUserEdit(ctx context.Context, tid *Tid, ub *TimUserBean, auth *TimAuth) (r *TimRemoteUserBean, err error) {
 	return
 }
 
 // Parameters:
 //  - Pbean
-func (this *TimImpl) TimResponsePresence(pbean *TimPBean, auth *TimAuth) (r *TimResponseBean, err error) {
+func (this *TimImpl) TimResponsePresence(ctx context.Context, pbean *TimPBean, auth *TimAuth) (r *TimResponseBean, err error) {
 	return
 }
 
 // Parameters:
 //  - Mbean
-func (this *TimImpl) TimResponseMessage(mbean *TimMBean, auth *TimAuth) (r *TimResponseBean, err error) {
+func (this *TimImpl) TimResponseMessage(ctx context.Context, mbean *TimMBean, auth *TimAuth) (r *TimResponseBean, err error) {
 	logger.Debug("ResponseMessage", mbean)
 	return
 }
 
-func (this *TimImpl) TimMessageIq(timMsgIq *TimMessageIq, iqType string) (err error) {
+func (this *TimImpl) TimMessageIq(ctx context.Context, timMsgIq *TimMessageIq, iqType string) (err error) {
 	logger.Debug("TimMessageIq:", timMsgIq, " ", iqType)
 	return
 }
 
 // Parameters:
 //  - Mbean
-func (this *TimImpl) TimMessageResult_(mbean *TimMBean) (err error) {
+func (this *TimImpl) TimMessageResult_(ctx context.Context, mbean *TimMBean) (err error) {
 	logger.Debug("TimMessageResult_:", mbean)
 	return
 }
 
-func (this *TimImpl) TimRoser(roster *TimRoster) (err error) {
+func (this *TimImpl) TimRoser(ctx context.Context, roster *TimRoster) (err error) {
 	logger.Debug("TimRoser:", roster)
 	return
 }
 
-func (this *TimImpl) TimResponseMessageIq(timMsgIq *TimMessageIq, iqType string, auth *TimAuth) (r *TimMBeanList, err error) {
+func (this *TimImpl) TimResponseMessageIq(ctx context.Context, timMsgIq *TimMessageIq, iqType string, auth *TimAuth) (r *TimMBeanList, err error) {
 	logger.Debug("TimResponseMessageIq:", timMsgIq, iqType, auth)
 	panic("error TimResponseMessageIq")
-	return
 }
 
-func (this *TimImpl) TimMessageList(mbeanList *TimMBeanList) (err error) {
+func (this *TimImpl) TimMessageList(ctx context.Context, mbeanList *TimMBeanList) (err error) {
 	ab := NewTimAckBean()
 	id := mbeanList.ThreadId
 	ab.ID = &id
@@ -190,7 +191,7 @@ func (this *TimImpl) TimMessageList(mbeanList *TimMBeanList) (err error) {
 
 // Parameters:
 //  - PbeanList
-func (this *TimImpl) TimPresenceList(pbeanList *TimPBeanList) (err error) {
+func (this *TimImpl) TimPresenceList(ctx context.Context, pbeanList *TimPBeanList) (err error) {
 	ab := NewTimAckBean()
 	id := pbeanList.ThreadId
 	ab.ID = &id
@@ -201,20 +202,18 @@ func (this *TimImpl) TimPresenceList(pbeanList *TimPBeanList) (err error) {
 	return
 }
 
-func (this *TimImpl) TimResponsePresenceList(pbeanList *TimPBeanList, auth *TimAuth) (r *TimResponseBean, err error) {
+func (this *TimImpl) TimResponsePresenceList(pctx context.Context, beanList *TimPBeanList, auth *TimAuth) (r *TimResponseBean, err error) {
 	panic("error TimResponsePresenceList")
-	return
 }
 
 // Parameters:
 //  - MbeanList
 //  - Auth
-func (this *TimImpl) TimResponseMessageList(mbeanList *TimMBeanList, auth *TimAuth) (r *TimResponseBean, err error) {
+func (this *TimImpl) TimResponseMessageList(ctx context.Context, mbeanList *TimMBeanList, auth *TimAuth) (r *TimResponseBean, err error) {
 	panic("error TimResponseMessageList")
-	return
 }
 
-func (this *TimImpl) TimProperty(tpb *TimPropertyBean) (err error) {
+func (this *TimImpl) TimProperty(ctx context.Context, tpb *TimPropertyBean) (err error) {
 	logger.Debug("TimProperty:", tpb)
 	return
 }

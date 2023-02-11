@@ -6,8 +6,9 @@ import (
 	"os"
 	"time"
 
-	"timgo.client"
-	. "timgo.protocol"
+	. "timgo/protocol"
+
+	"timgo/client"
 )
 
 func main() {

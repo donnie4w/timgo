@@ -1,0 +1,4 @@
+github.com/apache/thrift v0.17.0 h1:cMd2aj52n+8VoAtvSvLn4kDC3aZ6IAkBuqWQ2IDu7wo=
+github.com/apache/thrift v0.17.0/go.mod h1:OLxhMRJxomX+1I/KUw03qoV3mMz16BwaKI+d4fPBx7Q=
+github.com/donnie4w/go-logger v0.0.0-20170827050443-4740c51383f4 h1:T9PR91sjTtrA1HmZB4G+M7OLCelch0f6rIEY7Mm1T4U=
+github.com/donnie4w/go-logger v0.0.0-20170827050443-4740c51383f4/go.mod h1:L7S4x0R7vv3xoOhGuyAJyCO2MYzWOpccM4Isn8jIUgY=

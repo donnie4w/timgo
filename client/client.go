@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -9,9 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"git.apache.org/thrift.git/lib/go/thrift"
+	. "timgo/protocol"
+
+	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/donnie4w/go-logger/logger"
-	. "timgo.protocol"
 )
 
 type FLOW string
@@ -28,6 +30,7 @@ const (
 )
 
 type Connect struct {
+	Tt          thrift.TTransport
 	Client      *ITimClient
 	FlowConnect FLOW
 	Super       *Cli
@@ -40,9 +43,9 @@ func (this *Connect) Close() {
 			logger.Error(string(debug.Stack()))
 		}
 	}()
-	if this.Client != nil && this.Client.Transport != nil && this.FlowConnect != CONNECT_STOP {
+	if this.Client != nil && this.Tt != nil && this.FlowConnect != CONNECT_STOP {
 		this.FlowConnect = CONNECT_STOP
-		this.Client.Transport.Close()
+		this.Tt.Close()
 	}
 }
 
@@ -102,7 +105,7 @@ func (this *Cli) Sendmsg(toName string, msg *string) error {
 	_type, maptype := "chat", int16(1)
 	mbean.Type = &_type
 	mbean.MsgType = &maptype
-	return this.Connect.Client.TimMessage(mbean)
+	return this.Connect.Client.TimMessage(context.Background(), mbean)
 }
 
 func (this *Cli) SendPresence(toName string, show *string) error {
@@ -128,7 +131,7 @@ func (this *Cli) SendPresence(toName string, show *string) error {
 	_type := "chat"
 	pbean.Type = &_type
 	pbean.Show = show
-	return this.Connect.Client.TimPresence(pbean)
+	return this.Connect.Client.TimPresence(context.Background(), pbean)
 }
 
 func (this *Cli) SendPBean(pbean *TimPBean) error {
@@ -140,11 +143,11 @@ func (this *Cli) SendPBean(pbean *TimPBean) error {
 	}()
 	this.Sync.Lock()
 	defer this.Sync.Unlock()
-	return this.Connect.Client.TimPresence(pbean)
+	return this.Connect.Client.TimPresence(context.Background(), pbean)
 }
 
 func (this *Cli) SendMBean(mbean *TimMBean) {
-	this.Connect.Client.TimMessage(mbean)
+	this.Connect.Client.TimMessage(context.Background(), mbean)
 }
 
 func (this *Cli) DisConnect() {
@@ -155,7 +158,7 @@ func (this *Cli) DisConnect() {
 		}
 	}()
 	if this != nil && this.Connect != nil {
-		this.Connect.Client.Transport.Close()
+		this.Connect.Close()
 	}
 }
 
@@ -169,7 +172,7 @@ func (this *Cli) Ack(ab *TimAckBean) {
 	this.Sync.Lock()
 	defer this.Sync.Unlock()
 	if this != nil && this.Connect != nil && this.Flow == AUTH {
-		this.Connect.Client.TimAck(ab)
+		this.Connect.Client.TimAck(context.Background(), ab)
 	}
 }
 
@@ -182,7 +185,7 @@ func (this *Cli) Close() {
 	}()
 	if this != nil && this.Connect != nil {
 		this.Flow = CLOSE
-		this.Connect.Client.Transport.Close()
+		this.Connect.Close()
 	}
 }
 
@@ -226,7 +229,7 @@ func (this *Cli) Ping() {
 func Ping(this *Cli) (err error) {
 	this.Sync.Lock()
 	defer this.Sync.Unlock()
-	err = this.Connect.Client.TimPing(fmt.Sprint(currentTimeMillis()))
+	err = this.Connect.Client.TimPing(context.Background(), fmt.Sprint(currentTimeMillis()))
 	return
 }
 
@@ -263,7 +266,7 @@ func (this *Cli) Login() error {
 			fmt.Fprintln(os.Stderr, "Error opening socket to ", this.Addr, " ", err)
 			return err
 		}
-		useTransport = transportFactory.GetTransport(transport)
+		useTransport, _ = transportFactory.GetTransport(transport)
 	} else {
 		transport, err := getTSSLTransport(this.TLSAddr)
 		if err != nil {
@@ -273,7 +276,7 @@ func (this *Cli) Login() error {
 			fmt.Fprintln(os.Stderr, "Error opening socket to ", this.TLSAddr, " ", err)
 			return err
 		}
-		useTransport = transportFactory.GetTransport(transport)
+		useTransport, _ = transportFactory.GetTransport(transport)
 	}
 
 	timclient := NewITimClientFactory(useTransport, protocolFactory)
@@ -283,6 +286,7 @@ func (this *Cli) Login() error {
 	this.Connect = &Connect{FlowConnect: CONNECT_START}
 	this.Connect.setITimClient(timclient)
 	this.Connect.Super = this
+	this.Connect.Tt = useTransport
 
 	processorchan := make(chan int)
 	go this.Connect.processor(processorchan)
@@ -309,8 +313,8 @@ func Login(this *Cli, tid *Tid) (err error) {
 	v, i := int16(Protocolversion), "1"
 	param.Version = &v
 	param.Interflow = &i
-	this.Connect.Client.TimStream(param)
-	err = this.Connect.Client.TimLogin(tid, this.conf.Pwd)
+	this.Connect.Client.TimStream(context.Background(), param)
+	err = this.Connect.Client.TimLogin(context.Background(), tid, this.conf.Pwd)
 	return
 }
 
@@ -333,7 +337,7 @@ func (this *Connect) processor(processorchan chan int) {
 	handler := new(TimImpl)
 	handler.Client = this.Super
 	processor := NewITimProcessor(handler)
-	protocol := thrift.NewTCompactProtocol(this.Client.Transport)
+	protocol := thrift.NewTCompactProtocol(this.Tt)
 	for {
 		if this == nil || this.FlowConnect == CONNECT_STOP {
 			break
@@ -342,7 +346,7 @@ func (this *Connect) processor(processorchan chan int) {
 			this.FlowConnect = CONNECT_RUN
 			processorchan <- 1
 		}
-		b, err := processor.Process(protocol, protocol)
+		b, err := processor.Process(context.Background(), protocol, protocol)
 		if err != nil && !b {
 			break
 		}
