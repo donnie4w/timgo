@@ -1,4 +1,12 @@
-github.com/apache/thrift v0.17.0 h1:cMd2aj52n+8VoAtvSvLn4kDC3aZ6IAkBuqWQ2IDu7wo=
-github.com/apache/thrift v0.17.0/go.mod h1:OLxhMRJxomX+1I/KUw03qoV3mMz16BwaKI+d4fPBx7Q=
-github.com/donnie4w/go-logger v0.0.0-20170827050443-4740c51383f4 h1:T9PR91sjTtrA1HmZB4G+M7OLCelch0f6rIEY7Mm1T4U=
-github.com/donnie4w/go-logger v0.0.0-20170827050443-4740c51383f4/go.mod h1:L7S4x0R7vv3xoOhGuyAJyCO2MYzWOpccM4Isn8jIUgY=
+github.com/apache/thrift v0.19.0 h1:sOqkWPzMj7w6XaYbJQG7m4sGqVolaW/0D28Ln7yPzMk=
+github.com/apache/thrift v0.19.0/go.mod h1:SUALL216IiaOw2Oy+5Vs9lboJ/t9g40C+G07Dc0QC1I=
+github.com/donnie4w/gofer v0.0.0-20231013023216-bed8e384252a h1:R1QAQMdlL4bG3B3Z+HjOOZfzAqdkGljaAjX6GV7Tiic=
+github.com/donnie4w/gofer v0.0.0-20231013023216-bed8e384252a/go.mod h1:x2FACHumiId2KXUEsrkNoTgqFrssA5W69Y+n2R35cSY=
+github.com/donnie4w/gofer v0.0.0-20231124113624-7cb1e41f0c37 h1:+KG9zENmPwMaGLE/AYm5sTKja9ur3A4EWdtJZqQpOxk=
+github.com/donnie4w/gofer v0.0.0-20231124113624-7cb1e41f0c37/go.mod h1:NBFGqFrGtP18d/ERanemMKbklv0ua1pHjAUKv4ZVo4M=
+github.com/donnie4w/simplelog v0.0.0-20231003094257-95f526dcf3fe h1:evHHcLI7HdLzXB7cWCn2DAyLjdPhs9c043qFL0EusZg=
+github.com/donnie4w/simplelog v0.0.0-20231003094257-95f526dcf3fe/go.mod h1:rBZ2CzMlZ0KF8vgjY/zDzuNRtoebYDoy4zXapyWk3EM=
+golang.org/x/net v0.17.0 h1:pVaXccu2ozPjCXewfr1S7xza/zcXTity9cCdXQYSjIM=
+golang.org/x/net v0.17.0/go.mod h1:NxSsAGuq816PNPmqtQdLE42eU2Fs7NoRIZrHJAlaCOE=
+golang.org/x/net v0.19.0 h1:zTwKpTd2XuCqf8huc7Fo2iSy+4RHPd10s4KzeTnVr1c=
+golang.org/x/net v0.19.0/go.mod h1:CfAk/cbD4CthTvqiEl8NpboMuiuOYsAr/7NOjZJtv1U=
