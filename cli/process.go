@@ -18,27 +18,34 @@ type TIMTYPE byte
 type ROOMTYPE int64
 
 const (
-	TIMACK           TIMTYPE = 12 //回复ACK
-	TIMPING          TIMTYPE = 13 //ping
-	TIMREGISTER      TIMTYPE = 14 //注册
-	TIMTOKEN         TIMTYPE = 15 //拉取token
-	TIMAUTH          TIMTYPE = 16 //登录验证
-	TIMOFFLINEMSG    TIMTYPE = 17 //推送离线消息
-	TIMOFFLINEMSGEND TIMTYPE = 18 //推送离线消息完毕标识
-	TIMBROADPRESENCE TIMTYPE = 19 //广播状态订阅信息给在线好友
-	TIMLOGOUT        TIMTYPE = 20 //强制下线
-	TIMPULLMESSAGE   TIMTYPE = 21 //拉取聊天信息
-	TIMVROOM         TIMTYPE = 22 //虚拟房间操作
-	TIMBUSINESS      TIMTYPE = 41 //业务
-	TIMNODES         TIMTYPE = 42 //账号信息
-	TIMMESSAGE       TIMTYPE = 90 //消息
-	TIMPRESENCE      TIMTYPE = 91 //状态
-	TIMREVOKEMESSAGE TIMTYPE = 92 //撤回
-	TIMBURNMESSAGE   TIMTYPE = 93 //焚烧信息
-	TIMSTREAM        TIMTYPE = 94 //虚拟房间流数据
+	TIMACK             TIMTYPE = 12 //回复ACK
+	TIMPING            TIMTYPE = 13 //ping
+	TIMREGISTER        TIMTYPE = 14 //注册
+	TIMTOKEN           TIMTYPE = 15 //拉取token
+	TIMAUTH            TIMTYPE = 16 //登录验证
+	TIMOFFLINEMSG      TIMTYPE = 17 //推送离线消息
+	TIMOFFLINEMSGEND   TIMTYPE = 18 //推送离线消息完毕标识
+	TIMBROADPRESENCE   TIMTYPE = 19 //广播状态订阅信息给在线好友
+	TIMLOGOUT          TIMTYPE = 20 //强制下线
+	TIMPULLMESSAGE     TIMTYPE = 21 //拉取聊天信息
+	TIMVROOM           TIMTYPE = 22 //虚拟房间操作
+	TIMBUSINESS        TIMTYPE = 41 //业务
+	TIMNODES           TIMTYPE = 42 //账号信息
+	TIMMESSAGE         TIMTYPE = 90 //消息
+	TIMPRESENCE        TIMTYPE = 91 //状态
+	TIMREVOKEMESSAGE   TIMTYPE = 92 //撤回
+	TIMBURNMESSAGE     TIMTYPE = 93 //焚烧信息
+	TIMSTREAM          TIMTYPE = 94 //虚拟房间流数据
+	TIMBIGSTRING       TIMTYPE = 95 //大字符串
+	TIMBIGBINARY       TIMTYPE = 96 //大字节数组
+	TIMBIGBINARYSTREAM TIMTYPE = 97 //大字节流
+
 	//room species 群种类
 	ROOM_PRIVATE ROOMTYPE = 1 //私有群，入群需验证
 	ROOM_OPEN    ROOMTYPE = 2 //公开群，入群不需验证
+
+	SEP_BIN = byte(131)
+	SEP_STR = "|"
 )
 
 var (
@@ -100,6 +107,9 @@ const (
 	ERR_BLOCK      = 4110
 	ERR_OVERENTRY  = 4111
 	ERR_MODIFYAUTH = 4112
+	ERR_FORMAT     = 4113
+	ERR_BIGDATA    = 4114
+	ERR_TOKEN      = 4115
 )
 
 // 自定义订阅状态，根据实际需求赋值
@@ -454,7 +464,7 @@ func (this *tx) blockroomMemberlist(gnode string) []byte {
 	return buf.Bytes()
 }
 
-func (this *tx) virtualroom(rtype int32, vnode, unode string) []byte {
+func (this *tx) virtualroom(rtype int32, vnode, unode string, i int64) []byte {
 	buf := NewBuffer()
 	tr := &TimReq{Rtype: &rtype}
 	if vnode != "" {
@@ -462,6 +472,9 @@ func (this *tx) virtualroom(rtype int32, vnode, unode string) []byte {
 	}
 	if unode != "" {
 		tr.Node2 = &unode
+	}
+	if i > 0 {
+		tr.ReqInt = &i
 	}
 	buf.WriteByte(byte(TIMVROOM))
 	buf.Write(thrift.TEncode(tr))
@@ -493,5 +506,23 @@ func (this *tx) nodeinfo(ntype int32, nodelist []string, usermap map[string]*Tim
 	buf := NewBuffer()
 	buf.WriteByte(byte(TIMNODES))
 	buf.Write(thrift.TEncode(t))
+	return buf.Bytes()
+}
+
+func (this *tx) bigString(node string, datastring string) []byte {
+	buf := NewBuffer()
+	buf.WriteByte(byte(TIMBIGSTRING))
+	buf.WriteString(node)
+	buf.WriteString(SEP_STR)
+	buf.WriteString(datastring)
+	return buf.Bytes()
+}
+
+func (this *tx) bigBinary(node string, dataBinary []byte) []byte {
+	buf := NewBuffer()
+	buf.WriteByte(byte(TIMBIGBINARY))
+	buf.WriteString(node)
+	buf.WriteByte(SEP_BIN)
+	buf.Write(dataBinary)
 	return buf.Bytes()
 }
