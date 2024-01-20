@@ -250,40 +250,56 @@ func (this *TimClient) BlockRoomMemberlist(node string) (err error) {
 	return this.handler.sendws(this.Tx.blockroomMemberlist(node))
 }
 
+// send big string
+func (this *TimClient) BigDataString(node, datastring string) (err error) {
+	return this.handler.sendws(this.Tx.bigString(node, datastring))
+}
+
+// send big binary
+func (this *TimClient) BigDataBinary(node string, dataBinary []byte) (err error) {
+	return this.handler.sendws(this.Tx.bigBinary(node, dataBinary))
+}
+
 // creating a Virtual room
 // 创建虚拟房间
 func (this *TimClient) VirtualroomRegister() (err error) {
-	return this.handler.sendws(this.Tx.virtualroom(1, "", ""))
+	return this.handler.sendws(this.Tx.virtualroom(1, "", "", 0))
 }
 
 // creating a Virtual room
 // 销毁虚拟房间
 func (this *TimClient) VirtualroomRemove(roomNode string) (err error) {
-	return this.handler.sendws(this.Tx.virtualroom(2, roomNode, ""))
+	return this.handler.sendws(this.Tx.virtualroom(2, roomNode, "", 0))
 }
 
 // Add push stream data permissions for virtual rooms to a account
 // 给账户添加向虚拟房间推送流数据的权限
 func (this *TimClient) VirtualroomAddAuth(roomNode string, tonode string) (err error) {
-	return this.handler.sendws(this.Tx.virtualroom(3, roomNode, tonode))
+	return this.handler.sendws(this.Tx.virtualroom(3, roomNode, tonode, 0))
 }
 
 // delete the push stream data permissions for virtual rooms to a account
 // 删除用户向虚拟房间推送流数据的权限
 func (this *TimClient) VirtualroomDelAuth(roomNode string, tonode string) (err error) {
-	return this.handler.sendws(this.Tx.virtualroom(4, roomNode, tonode))
+	return this.handler.sendws(this.Tx.virtualroom(4, roomNode, tonode, 0))
 }
 
 // Subscribe the stream data of the virtual room
 // 向虚拟房间订阅流数据
 func (this *TimClient) VirtualroomSub(roomNode string) (err error) {
-	return this.handler.sendws(this.Tx.virtualroom(5, roomNode, ""))
+	return this.handler.sendws(this.Tx.virtualroom(5, roomNode, "", 0))
+}
+
+// Subscribe the stream data of the virtual room
+// 向虚拟房间订阅流数据
+func (this *TimClient) VirtualroomSubBinary(roomNode string) (err error) {
+	return this.handler.sendws(this.Tx.virtualroom(5, roomNode, "", 1))
 }
 
 // cancel subscribe the stream data of the virtual room
 // 取消订阅虚拟房间数据
 func (this *TimClient) VirtualroomSubCancel(roomNode string) (err error) {
-	return this.handler.sendws(this.Tx.virtualroom(6, roomNode, ""))
+	return this.handler.sendws(this.Tx.virtualroom(6, roomNode, "", 0))
 }
 
 // push the stream data to the virtual room
