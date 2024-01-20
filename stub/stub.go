@@ -199,12 +199,16 @@ func (p *TimError) Validate() error {
 //  - Error
 //  - T
 //  - N
+//  - T2
+//  - N2
 type TimAck struct {
   Ok bool `thrift:"ok,1,required" db:"ok" json:"ok"`
   TimType int8 `thrift:"timType,2,required" db:"timType" json:"timType"`
   Error *TimError `thrift:"error,3" db:"error" json:"error,omitempty"`
   T *int64 `thrift:"t,4" db:"t" json:"t,omitempty"`
   N *string `thrift:"n,5" db:"n" json:"n,omitempty"`
+  T2 *int64 `thrift:"t2,6" db:"t2" json:"t2,omitempty"`
+  N2 *string `thrift:"n2,7" db:"n2" json:"n2,omitempty"`
 }
 
 func NewTimAck() *TimAck {
@@ -240,6 +244,20 @@ func (p *TimAck) GetN() string {
   }
 return *p.N
 }
+var TimAck_T2_DEFAULT int64
+func (p *TimAck) GetT2() int64 {
+  if !p.IsSetT2() {
+    return TimAck_T2_DEFAULT
+  }
+return *p.T2
+}
+var TimAck_N2_DEFAULT string
+func (p *TimAck) GetN2() string {
+  if !p.IsSetN2() {
+    return TimAck_N2_DEFAULT
+  }
+return *p.N2
+}
 func (p *TimAck) IsSetError() bool {
   return p.Error != nil
 }
@@ -250,6 +268,14 @@ func (p *TimAck) IsSetT() bool {
 
 func (p *TimAck) IsSetN() bool {
   return p.N != nil
+}
+
+func (p *TimAck) IsSetT2() bool {
+  return p.T2 != nil
+}
+
+func (p *TimAck) IsSetN2() bool {
+  return p.N2 != nil
 }
 
 func (p *TimAck) Read(ctx context.Context, iprot thrift.TProtocol) error {
@@ -312,6 +338,26 @@ func (p *TimAck) Read(ctx context.Context, iprot thrift.TProtocol) error {
     case 5:
       if fieldTypeId == thrift.STRING {
         if err := p.ReadField5(ctx, iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(ctx, fieldTypeId); err != nil {
+          return err
+        }
+      }
+    case 6:
+      if fieldTypeId == thrift.I64 {
+        if err := p.ReadField6(ctx, iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(ctx, fieldTypeId); err != nil {
+          return err
+        }
+      }
+    case 7:
+      if fieldTypeId == thrift.STRING {
+        if err := p.ReadField7(ctx, iprot); err != nil {
           return err
         }
       } else {
@@ -385,6 +431,24 @@ func (p *TimAck)  ReadField5(ctx context.Context, iprot thrift.TProtocol) error 
   return nil
 }
 
+func (p *TimAck)  ReadField6(ctx context.Context, iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadI64(ctx); err != nil {
+  return thrift.PrependError("error reading field 6: ", err)
+} else {
+  p.T2 = &v
+}
+  return nil
+}
+
+func (p *TimAck)  ReadField7(ctx context.Context, iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadString(ctx); err != nil {
+  return thrift.PrependError("error reading field 7: ", err)
+} else {
+  p.N2 = &v
+}
+  return nil
+}
+
 func (p *TimAck) Write(ctx context.Context, oprot thrift.TProtocol) error {
   if err := oprot.WriteStructBegin(ctx, "TimAck"); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
@@ -394,6 +458,8 @@ func (p *TimAck) Write(ctx context.Context, oprot thrift.TProtocol) error {
     if err := p.writeField3(ctx, oprot); err != nil { return err }
     if err := p.writeField4(ctx, oprot); err != nil { return err }
     if err := p.writeField5(ctx, oprot); err != nil { return err }
+    if err := p.writeField6(ctx, oprot); err != nil { return err }
+    if err := p.writeField7(ctx, oprot); err != nil { return err }
   }
   if err := oprot.WriteFieldStop(ctx); err != nil {
     return thrift.PrependError("write field stop error: ", err) }
@@ -459,6 +525,30 @@ func (p *TimAck) writeField5(ctx context.Context, oprot thrift.TProtocol) (err e
   return err
 }
 
+func (p *TimAck) writeField6(ctx context.Context, oprot thrift.TProtocol) (err error) {
+  if p.IsSetT2() {
+    if err := oprot.WriteFieldBegin(ctx, "t2", thrift.I64, 6); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 6:t2: ", p), err) }
+    if err := oprot.WriteI64(ctx, int64(*p.T2)); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T.t2 (6) field write error: ", p), err) }
+    if err := oprot.WriteFieldEnd(ctx); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 6:t2: ", p), err) }
+  }
+  return err
+}
+
+func (p *TimAck) writeField7(ctx context.Context, oprot thrift.TProtocol) (err error) {
+  if p.IsSetN2() {
+    if err := oprot.WriteFieldBegin(ctx, "n2", thrift.STRING, 7); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 7:n2: ", p), err) }
+    if err := oprot.WriteString(ctx, string(*p.N2)); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T.n2 (7) field write error: ", p), err) }
+    if err := oprot.WriteFieldEnd(ctx); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 7:n2: ", p), err) }
+  }
+  return err
+}
+
 func (p *TimAck) Equals(other *TimAck) bool {
   if p == other {
     return true
@@ -479,6 +569,18 @@ func (p *TimAck) Equals(other *TimAck) bool {
       return false
     }
     if (*p.N) != (*other.N) { return false }
+  }
+  if p.T2 != other.T2 {
+    if p.T2 == nil || other.T2 == nil {
+      return false
+    }
+    if (*p.T2) != (*other.T2) { return false }
+  }
+  if p.N2 != other.N2 {
+    if p.N2 == nil || other.N2 == nil {
+      return false
+    }
+    if (*p.N2) != (*other.N2) { return false }
   }
   return true
 }
@@ -1913,6 +2015,7 @@ func (p *TimUserBean) Validate() error {
 //  - Topic
 //  - Label
 //  - Gtype
+//  - Kind
 //  - Createtime
 //  - Extend
 //  - Extra
@@ -1923,9 +2026,10 @@ type TimRoomBean struct {
   Topic *string `thrift:"topic,4" db:"topic" json:"topic,omitempty"`
   Label *string `thrift:"label,5" db:"label" json:"label,omitempty"`
   Gtype *int8 `thrift:"gtype,6" db:"gtype" json:"gtype,omitempty"`
-  Createtime *int64 `thrift:"createtime,7" db:"createtime" json:"createtime,omitempty"`
-  Extend map[string]string `thrift:"extend,8" db:"extend" json:"extend,omitempty"`
-  Extra map[string][]byte `thrift:"extra,9" db:"extra" json:"extra,omitempty"`
+  Kind *int64 `thrift:"kind,7" db:"kind" json:"kind,omitempty"`
+  Createtime *int64 `thrift:"createtime,8" db:"createtime" json:"createtime,omitempty"`
+  Extend map[string]string `thrift:"extend,9" db:"extend" json:"extend,omitempty"`
+  Extra map[string][]byte `thrift:"extra,10" db:"extra" json:"extra,omitempty"`
 }
 
 func NewTimRoomBean() *TimRoomBean {
@@ -1972,6 +2076,13 @@ func (p *TimRoomBean) GetGtype() int8 {
   }
 return *p.Gtype
 }
+var TimRoomBean_Kind_DEFAULT int64
+func (p *TimRoomBean) GetKind() int64 {
+  if !p.IsSetKind() {
+    return TimRoomBean_Kind_DEFAULT
+  }
+return *p.Kind
+}
 var TimRoomBean_Createtime_DEFAULT int64
 func (p *TimRoomBean) GetCreatetime() int64 {
   if !p.IsSetCreatetime() {
@@ -2011,6 +2122,10 @@ func (p *TimRoomBean) IsSetLabel() bool {
 
 func (p *TimRoomBean) IsSetGtype() bool {
   return p.Gtype != nil
+}
+
+func (p *TimRoomBean) IsSetKind() bool {
+  return p.Kind != nil
 }
 
 func (p *TimRoomBean) IsSetCreatetime() bool {
@@ -2109,7 +2224,7 @@ func (p *TimRoomBean) Read(ctx context.Context, iprot thrift.TProtocol) error {
         }
       }
     case 8:
-      if fieldTypeId == thrift.MAP {
+      if fieldTypeId == thrift.I64 {
         if err := p.ReadField8(ctx, iprot); err != nil {
           return err
         }
@@ -2121,6 +2236,16 @@ func (p *TimRoomBean) Read(ctx context.Context, iprot thrift.TProtocol) error {
     case 9:
       if fieldTypeId == thrift.MAP {
         if err := p.ReadField9(ctx, iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(ctx, fieldTypeId); err != nil {
+          return err
+        }
+      }
+    case 10:
+      if fieldTypeId == thrift.MAP {
+        if err := p.ReadField10(ctx, iprot); err != nil {
           return err
         }
       } else {
@@ -2215,12 +2340,21 @@ func (p *TimRoomBean)  ReadField7(ctx context.Context, iprot thrift.TProtocol) e
   if v, err := iprot.ReadI64(ctx); err != nil {
   return thrift.PrependError("error reading field 7: ", err)
 } else {
-  p.Createtime = &v
+  p.Kind = &v
 }
   return nil
 }
 
 func (p *TimRoomBean)  ReadField8(ctx context.Context, iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadI64(ctx); err != nil {
+  return thrift.PrependError("error reading field 8: ", err)
+} else {
+  p.Createtime = &v
+}
+  return nil
+}
+
+func (p *TimRoomBean)  ReadField9(ctx context.Context, iprot thrift.TProtocol) error {
   _, _, size, err := iprot.ReadMapBegin(ctx)
   if err != nil {
     return thrift.PrependError("error reading map begin: ", err)
@@ -2248,7 +2382,7 @@ var _val13 string
   return nil
 }
 
-func (p *TimRoomBean)  ReadField9(ctx context.Context, iprot thrift.TProtocol) error {
+func (p *TimRoomBean)  ReadField10(ctx context.Context, iprot thrift.TProtocol) error {
   _, _, size, err := iprot.ReadMapBegin(ctx)
   if err != nil {
     return thrift.PrependError("error reading map begin: ", err)
@@ -2289,6 +2423,7 @@ func (p *TimRoomBean) Write(ctx context.Context, oprot thrift.TProtocol) error {
     if err := p.writeField7(ctx, oprot); err != nil { return err }
     if err := p.writeField8(ctx, oprot); err != nil { return err }
     if err := p.writeField9(ctx, oprot); err != nil { return err }
+    if err := p.writeField10(ctx, oprot); err != nil { return err }
   }
   if err := oprot.WriteFieldStop(ctx); err != nil {
     return thrift.PrependError("write field stop error: ", err) }
@@ -2378,21 +2513,33 @@ func (p *TimRoomBean) writeField6(ctx context.Context, oprot thrift.TProtocol) (
 }
 
 func (p *TimRoomBean) writeField7(ctx context.Context, oprot thrift.TProtocol) (err error) {
-  if p.IsSetCreatetime() {
-    if err := oprot.WriteFieldBegin(ctx, "createtime", thrift.I64, 7); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T write field begin error 7:createtime: ", p), err) }
-    if err := oprot.WriteI64(ctx, int64(*p.Createtime)); err != nil {
-    return thrift.PrependError(fmt.Sprintf("%T.createtime (7) field write error: ", p), err) }
+  if p.IsSetKind() {
+    if err := oprot.WriteFieldBegin(ctx, "kind", thrift.I64, 7); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 7:kind: ", p), err) }
+    if err := oprot.WriteI64(ctx, int64(*p.Kind)); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T.kind (7) field write error: ", p), err) }
     if err := oprot.WriteFieldEnd(ctx); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T write field end error 7:createtime: ", p), err) }
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 7:kind: ", p), err) }
   }
   return err
 }
 
 func (p *TimRoomBean) writeField8(ctx context.Context, oprot thrift.TProtocol) (err error) {
+  if p.IsSetCreatetime() {
+    if err := oprot.WriteFieldBegin(ctx, "createtime", thrift.I64, 8); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 8:createtime: ", p), err) }
+    if err := oprot.WriteI64(ctx, int64(*p.Createtime)); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T.createtime (8) field write error: ", p), err) }
+    if err := oprot.WriteFieldEnd(ctx); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 8:createtime: ", p), err) }
+  }
+  return err
+}
+
+func (p *TimRoomBean) writeField9(ctx context.Context, oprot thrift.TProtocol) (err error) {
   if p.IsSetExtend() {
-    if err := oprot.WriteFieldBegin(ctx, "extend", thrift.MAP, 8); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T write field begin error 8:extend: ", p), err) }
+    if err := oprot.WriteFieldBegin(ctx, "extend", thrift.MAP, 9); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 9:extend: ", p), err) }
     if err := oprot.WriteMapBegin(ctx, thrift.STRING, thrift.STRING, len(p.Extend)); err != nil {
       return thrift.PrependError("error writing map begin: ", err)
     }
@@ -2406,15 +2553,15 @@ func (p *TimRoomBean) writeField8(ctx context.Context, oprot thrift.TProtocol) (
       return thrift.PrependError("error writing map end: ", err)
     }
     if err := oprot.WriteFieldEnd(ctx); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T write field end error 8:extend: ", p), err) }
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 9:extend: ", p), err) }
   }
   return err
 }
 
-func (p *TimRoomBean) writeField9(ctx context.Context, oprot thrift.TProtocol) (err error) {
+func (p *TimRoomBean) writeField10(ctx context.Context, oprot thrift.TProtocol) (err error) {
   if p.IsSetExtra() {
-    if err := oprot.WriteFieldBegin(ctx, "extra", thrift.MAP, 9); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T write field begin error 9:extra: ", p), err) }
+    if err := oprot.WriteFieldBegin(ctx, "extra", thrift.MAP, 10); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 10:extra: ", p), err) }
     if err := oprot.WriteMapBegin(ctx, thrift.STRING, thrift.STRING, len(p.Extra)); err != nil {
       return thrift.PrependError("error writing map begin: ", err)
     }
@@ -2428,7 +2575,7 @@ func (p *TimRoomBean) writeField9(ctx context.Context, oprot thrift.TProtocol) (
       return thrift.PrependError("error writing map end: ", err)
     }
     if err := oprot.WriteFieldEnd(ctx); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T write field end error 9:extra: ", p), err) }
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 10:extra: ", p), err) }
   }
   return err
 }
@@ -2473,6 +2620,12 @@ func (p *TimRoomBean) Equals(other *TimRoomBean) bool {
       return false
     }
     if (*p.Gtype) != (*other.Gtype) { return false }
+  }
+  if p.Kind != other.Kind {
+    if p.Kind == nil || other.Kind == nil {
+      return false
+    }
+    if (*p.Kind) != (*other.Kind) { return false }
   }
   if p.Createtime != other.Createtime {
     if p.Createtime == nil || other.Createtime == nil {
