@@ -31,6 +31,10 @@ type TimClient struct {
 	pullmessageHandler   func(*TimMessageList)
 	offlineMsgHandler    func(*TimMessageList)
 	offlinemsgEndHandler func()
+
+	bigStringHandler       func([]byte)
+	bigBinaryHandler       func([]byte)
+	bigBinaryStreamHandler func([]byte)
 }
 
 func NewTimClient(ip string, port int, tls bool) (tc *TimClient) {
@@ -175,6 +179,18 @@ func (this *TimClient) doMsg(t TIMTYPE, bs []byte) {
 			if ts, _ := TDecode(bs, &TimStream{}); ts != nil {
 				this.streamHandler(ts)
 			}
+		}
+	case TIMBIGSTRING:
+		if this.bigStringHandler != nil {
+			this.bigStringHandler(bs)
+		}
+	case TIMBIGBINARY:
+		if this.bigBinaryHandler != nil {
+			this.bigBinaryHandler(bs)
+		}
+	case TIMBIGBINARYSTREAM:
+		if this.bigBinaryStreamHandler != nil {
+			this.bigBinaryStreamHandler(bs)
 		}
 	default:
 		logging.Warn("undisposed >>>>>", t, " ,data length:", len(bs))
