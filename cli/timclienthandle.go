@@ -40,7 +40,16 @@ type TimClient struct {
 func NewTimClient(ip string, port int, tls bool) (tc *TimClient) {
 	if addr := formatUrl(ip, port, tls); addr != "" {
 		tc = &TimClient{addr: addr, Tx: &tx{&TimAuth{}}}
-		tc.init()
+		tc.defaultInit()
+	}
+	return
+}
+
+func NewTimClientConfig(ip string, port int, tls bool, conf *Config) (tc *TimClient) {
+	if addr := formatUrl(ip, port, tls); addr != "" {
+		tc = &TimClient{addr: addr, Tx: &tx{&TimAuth{}}}
+		conf.Url = addr
+		tc.init(conf)
 	}
 	return
 }
@@ -64,8 +73,8 @@ func formatUrl(ip string, port int, tls bool) (url string) {
 	return
 }
 
-func (this *TimClient) init() {
-	this.conf = &Config{TimeOut: 10, Url: this.addr + "/tim", Origin: "https://github.com/donnie4w/tim"}
+func (this *TimClient) init(conf *Config) {
+	this.conf = conf
 	parse(this.conf)
 	this.conf.OnError = func(_ *cliHandle, err error) {
 		logging.Error("OnError:", err)
@@ -91,6 +100,10 @@ func (this *TimClient) init() {
 		this.pingCount = 0
 		this.doMsg(t, msg)
 	}
+}
+
+func (this *TimClient) defaultInit() {
+	this.init(&Config{TimeOut: 10, Url: this.addr + "/tim", Origin: "https://github.com/donnie4w/tim"})
 }
 
 func (this *TimClient) Timeout(t time.Duration) {
