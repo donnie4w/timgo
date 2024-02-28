@@ -8,10 +8,13 @@ package cli
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +27,8 @@ type Config struct {
 	Url       string
 	Origin    string
 	HttpUrl   string
+	CertFiles []string
+	CertBytes [][]byte
 	TimeOut   time.Duration
 	Tx        *tx
 	OnOpen    func(c *cliHandle)
@@ -44,7 +49,27 @@ func NewCliHandle(conf *Config) (cli *cliHandle, err error) {
 	var conn *websocket.Conn
 	config := &websocket.Config{Dialer: &net.Dialer{Timeout: conf.TimeOut * time.Second}, Version: websocket.ProtocolVersionHybi13}
 	if strings.HasPrefix(conf.Url, "wss:") {
-		config.TlsConfig = &tls.Config{InsecureSkipVerify: true}
+		if conf.CertFiles != nil {
+			if rootcas, err := loadCACertificatesFromFiles(conf.CertFiles); err == nil {
+				config.TlsConfig = &tls.Config{
+					RootCAs:            rootcas,
+					InsecureSkipVerify: false,
+				}
+			} else {
+				return nil, err
+			}
+		} else if conf.CertBytes != nil {
+			if rootcas, err := loadCACertificatesFromBytes(conf.CertBytes); err == nil {
+				config.TlsConfig = &tls.Config{
+					RootCAs:            rootcas,
+					InsecureSkipVerify: false,
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			config.TlsConfig = &tls.Config{InsecureSkipVerify: true}
+		}
 	}
 	if config.Location, err = url.ParseRequestURI(conf.Url); err == nil {
 		if config.Origin, err = url.ParseRequestURI(conf.Origin); err == nil {
@@ -151,4 +176,29 @@ func httpPost(bs []byte, conf *Config, close bool) (_r []byte, err error) {
 		}
 	}
 	return
+}
+
+func loadCACertificatesFromFiles(certFiles []string) (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	for _, certFile := range certFiles {
+		pemData, err := os.ReadFile(certFile)
+		if err != nil {
+			return nil, err
+		}
+
+		if ok := pool.AppendCertsFromPEM(pemData); !ok {
+			return nil, errors.New("failed to append certificates from PEM data")
+		}
+	}
+	return pool, nil
+}
+
+func loadCACertificatesFromBytes(certBytes [][]byte) (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	for _, bs := range certBytes {
+		if ok := pool.AppendCertsFromPEM(bs); !ok {
+			return nil, errors.New("failed to append certificates from PEM data")
+		}
+	}
+	return pool, nil
 }
