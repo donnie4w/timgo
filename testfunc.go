@@ -14,8 +14,8 @@ import (
 	. "github.com/donnie4w/timgo/stub"
 )
 
-func newTimClientWithHandle(ip string, port int, tls bool) *TimClient {
-	tc := NewTimClient(ip, port, tls)
+func newTimClientWithHandle(tls bool, ip string, port int) *TimClient {
+	tc := NewTimClient(tls, ip, port)
 	var myAccount string
 	//message消息
 	tc.MessageHandler(func(tm *TimMessage) {
@@ -220,7 +220,7 @@ func main() {
 	pwd := flag.String("pwd", "", "")
 	p := flag.Int("p", 0, "")
 	flag.Parse()
-	tc := newTimClientWithHandle("tim.tlnet.top", *p, true)
+	tc := newTimClientWithHandle(true, "tim.tlnet.top", *p)
 	tc.Login(*name, *pwd, "tlnet.top", "android", 1, nil)
 	select {}
 }
@@ -230,7 +230,7 @@ func loginone() *TimClient {
 	pwd := flag.String("pwd", "", "")
 	p := flag.Int("p", 0, "")
 	flag.Parse()
-	tc := newTimClientWithHandle("192.168.2.11", *p, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", *p)
 	tc.Login(*name, *pwd, "tlnet.top", "android", 1, nil)
 	return tc
 }
@@ -241,7 +241,7 @@ func subVirtual() {
 	pwd := flag.String("pwd", "", "")
 	p := flag.Int("p", 0, "")
 	flag.Parse()
-	tc := newTimClientWithHandle("192.168.2.11", *p, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", *p)
 	tc.Login(*name, *pwd, "tlnet.top", "android", 1, nil)
 	<-time.After(time.Second)
 	tc.VirtualroomSub(*vr)
@@ -260,7 +260,7 @@ func loginMutli() {
 	logging.Debug("loginMutli: f>>", *f, ",t>>", *t, ",ip>>", *ip, ",port>>", *p)
 	for i := *f; i <= *t; i++ {
 		<-time.After(100 * time.Millisecond)
-		go newTimClientWithHandle(*ip, *p, false).Login(fmt.Sprint("tim", i), "123", "tlnet.top", "android", 1, nil)
+		go newTimClientWithHandle(false, *ip, *p).Login(fmt.Sprint("tim", i), "123", "tlnet.top", "android", 1, nil)
 	}
 }
 
@@ -282,7 +282,7 @@ func registermulti(f, t int, ip string, p int) {
 	for i := f; i <= t; i++ {
 		<-time.After(5 * time.Millisecond)
 		go func(i int) {
-			sc := newTimClientWithHandle(ip, p, false)
+			sc := newTimClientWithHandle(false, ip, p)
 			if ack, err := sc.Register(fmt.Sprint("tim", i), "123", "tlnet.top"); err == nil && ack != nil && ack.Ok {
 				logging.Debug("register successful")
 				logging.Debug("node>>>", *ack.N)
