@@ -37,7 +37,7 @@ type TimClient struct {
 	AfterLoginEvent        func()
 }
 
-func NewTimClient(ip string, port int, tls bool) (tc *TimClient) {
+func NewTimClient(tls bool, ip string, port int) (tc *TimClient) {
 	if addr := formatUrl(ip, port, tls); addr != "" {
 		tc = &TimClient{addr: addr, ts: &tx{&TimAuth{}}}
 		tc.defaultInit()
