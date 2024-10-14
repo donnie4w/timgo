@@ -18,7 +18,7 @@ func newaccount(number int, preusername string) {
 	for i := 0; i < number; i++ {
 		<-time.After(10 * time.Millisecond)
 		go func(i int) {
-			tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+			tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 			account := fmt.Sprint(preusername, i)
 			if ack, err := tc.Register(account, "123", "tlnet.top"); err == nil && ack != nil && ack.Ok {
 				logging.Debug("register successful")
@@ -37,7 +37,7 @@ func newlogin(from, to int, port int, name string) {
 	for i := from; i < to; i++ {
 		<-time.After(10 * time.Millisecond)
 		go func(i int) {
-			tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+			tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 			account := fmt.Sprint(name, i)
 			tc.Login(account, "123", "tlnet.top", "android", 1, nil)
 			<-time.After(time.Second)
@@ -67,20 +67,20 @@ func TestNewaccount(t *testing.T) {
 }
 
 func Test_Register(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	if ack, _ := tc.Register("tom1", "123", "tlnet.top"); ack != nil {
 		fmt.Println(ack)
 	}
 }
 
 func Test_Login(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tom2", "123", "tlnet.top", "web", 1, nil)
 	<-time.After(300 * time.Second)
 }
 
 func TestLogin(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5120, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5120)
 	/*————————————————————————————————————————————————————————————————————————————————————————*/
 	// if ack, err := tc.Register("test5", "123", "tlnet.top"); err == nil && ack != nil && ack.Ok {
 	// 	logging.Debug("register successful")
@@ -138,7 +138,7 @@ func TestRegistermulti(t *testing.T) {
 //openroom JXjh2vcocNk  1000
 
 func TestVirtualroomRegister(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5081, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5081)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.VirtualroomRegister()
 	<-time.After(2 * time.Second)
@@ -146,7 +146,7 @@ func TestVirtualroomRegister(t *testing.T) {
 }
 
 func TestPushStream(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5081, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5081)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	for i := 0; i < 1<<1; i++ {
 		<-time.After(100 * time.Microsecond)
@@ -157,7 +157,7 @@ func TestPushStream(t *testing.T) {
 }
 
 func TestVirtualroomAddAuth(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.VirtualroomSub("AoCr4JXU9KM")
 	<-time.After(5 * time.Second)
@@ -168,7 +168,7 @@ func TestVirtualroomAddAuth(t *testing.T) {
 }
 
 func TestModify(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.ModifyPwd("123", "123")
 	<-time.After(1 * time.Second)
@@ -176,7 +176,7 @@ func TestModify(t *testing.T) {
 }
 
 func TestVriturlSub(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.VirtualroomSub("jBfuhomE1um")
 	// tc.VirtualroomSubCancel("AoCr4JXU9KM")
@@ -185,7 +185,7 @@ func TestVriturlSub(t *testing.T) {
 }
 
 func TestVirtualroomRemove(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim2", "123", "tlnet.top", "android", 1, nil)
 	tc.VirtualroomRemove("Q6uWRj6inkY")
 	<-time.After(3 * time.Second)
@@ -193,7 +193,7 @@ func TestVirtualroomRemove(t *testing.T) {
 }
 
 func TestNodeInfo(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("test1", "123", "tlnet.top", "android", 1, nil)
 	tc.UserInfo("ijUgqi2oEs7", "f4X3mDaivzs")
 	tc.RoomInfo("fAyVgz7cpkw", "BaeoTNuaczC")
@@ -204,7 +204,7 @@ func TestNodeInfo(t *testing.T) {
 }
 
 func TestPullUserMessage(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5000, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5000)
 	tc.Login("tim2", "123", "tlnet.top", "android", 1, nil)
 	tc.PullUserMessage("10001", 0, 10)
 	<-time.After(3 * time.Second)
@@ -212,7 +212,7 @@ func TestPullUserMessage(t *testing.T) {
 }
 
 func TestPullRoomMessage(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5000, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5000)
 	tc.Login("tim2", "123", "tlnet.top", "android", 1, nil)
 	tc.PullRoomMessage("10000000001", 0, 10)
 	<-time.After(3 * time.Second)
@@ -220,7 +220,7 @@ func TestPullRoomMessage(t *testing.T) {
 }
 
 func TestRevokeMessage(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5000, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5000)
 	tc.Login("tim2", "123", "tlnet.top", "android", 1, nil)
 	tc.RevokeMessage(1, "10001", "", "", 0, 0)
 	<-time.After(3 * time.Second)
@@ -228,7 +228,7 @@ func TestRevokeMessage(t *testing.T) {
 }
 
 func TestRevokeMessageRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5000, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5000)
 	tc.Login("tim2", "123", "tlnet.top", "android", 1, nil)
 	tc.RevokeMessage(7, "", "10000000001", "", 0, 0)
 	<-time.After(3 * time.Second)
@@ -236,7 +236,7 @@ func TestRevokeMessageRoom(t *testing.T) {
 }
 
 func TestBurnMessage(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5082, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5082)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.BurnMessage(4, "10002", "", 0, 0)
 	<-time.After(3 * time.Second)
@@ -244,7 +244,7 @@ func TestBurnMessage(t *testing.T) {
 }
 
 func TestMessageToUser(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5081, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5081)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.MessageToUser("QdH6CCms5FV", fmt.Sprint("hello123456哈"), 0, 0, nil, nil)
 	<-time.After(3 * time.Second)
@@ -252,7 +252,7 @@ func TestMessageToUser(t *testing.T) {
 }
 
 func TestMessageToRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5000, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5000)
 	tc.Login("tim2", "123", "tlnet.top", "android", 1, nil)
 	tc.MessageToRoom("10000000001", fmt.Sprint("hello123456"), 0, 0, nil, nil)
 	<-time.After(3 * time.Second)
@@ -260,7 +260,7 @@ func TestMessageToRoom(t *testing.T) {
 }
 
 func TestStreamToUser(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 443, true)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 443)
 	tc.Login("tim3", "123", "tlnet.top", "android", 1, nil)
 	bs, _ := util.ReadFile(`D:\workspace\donnie4w_go\src\github.com\webtim\webtim_linux`)
 	tc.StreamToUser("UHuS8PoK2Mi", bs[:], 0, 0)
@@ -272,7 +272,7 @@ func TestStreamToUser(t *testing.T) {
 // tim2 QdH6CCms5FV
 
 func TestAddroster(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim8", "123", "tlnet.top", "android", 1, nil)
 	tc.Addroster("QdH6CCms5FV", "123")
 	<-time.After(3 * time.Second)
@@ -280,7 +280,7 @@ func TestAddroster(t *testing.T) {
 }
 
 func TestRmroster(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.Rmroster("QdH6CCms5FV")
 	<-time.After(3 * time.Second)
@@ -288,7 +288,7 @@ func TestRmroster(t *testing.T) {
 }
 
 func TestBlockroster(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.Blockroster("QdH6CCms5FV")
 	<-time.After(3 * time.Second)
@@ -296,7 +296,7 @@ func TestBlockroster(t *testing.T) {
 }
 
 func TestRosterPullInRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("test1", "123", "tlnet.top", "android", 1, nil)
 	tc.PullInRoom("AaAGFd4JaHf", "UHuS8PoK2Mi")
 	<-time.After(3 * time.Second)
@@ -304,7 +304,7 @@ func TestRosterPullInRoom(t *testing.T) {
 }
 
 func TestRoomNewRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("qian1", "123", "tlnet.top", "android", 1, nil)
 	tc.NewRoom(ROOM_OPEN, "tim group")
 	<-time.After(3 * time.Second)
@@ -313,7 +313,7 @@ func TestRoomNewRoom(t *testing.T) {
 
 // private room : AaAGFd4JaHf
 func TestRoomAddRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.AddRoom("AaAGFd4JaHf", "i am tim1")
 	<-time.After(3 * time.Second)
@@ -321,7 +321,7 @@ func TestRoomAddRoom(t *testing.T) {
 }
 
 func TestRoomPullInRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("test1", "123", "tlnet.top", "android", 1, nil)
 	tc.PullInRoom("AaAGFd4JaHf", "UHuS8PoK2Mi")
 	<-time.After(3 * time.Second)
@@ -329,7 +329,7 @@ func TestRoomPullInRoom(t *testing.T) {
 }
 
 func TestBlockRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.BlockRoom("AaAGFd4JaHf")
 	<-time.After(3 * time.Second)
@@ -337,7 +337,7 @@ func TestBlockRoom(t *testing.T) {
 }
 
 func TestLeaveRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.LeaveRoom("AaAGFd4JaHf")
 	<-time.After(3 * time.Second)
@@ -345,7 +345,7 @@ func TestLeaveRoom(t *testing.T) {
 }
 
 func TestBlockRoomMember(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("test1", "123", "tlnet.top", "android", 1, nil)
 	tc.BlockRoomMember("AaAGFd4JaHf", "QdH6CCms5FV")
 	<-time.After(3 * time.Second)
@@ -353,7 +353,7 @@ func TestBlockRoomMember(t *testing.T) {
 }
 
 func TestKickRoom(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("test1", "123", "tlnet.top", "android", 1, nil)
 	tc.KickRoom("AaAGFd4JaHf", "QdH6CCms5FV")
 	<-time.After(3 * time.Second)
@@ -361,7 +361,7 @@ func TestKickRoom(t *testing.T) {
 }
 
 func TestBlockRoomMemberlist(t *testing.T) {
-	tc := newTimClientWithHandle("192.168.2.11", 5080, false)
+	tc := newTimClientWithHandle(false, "192.168.2.11", 5080)
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
 	tc.BlockRoomMemberlist("AaAGFd4JaHf")
 	<-time.After(3 * time.Second)
