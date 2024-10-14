@@ -11,7 +11,7 @@ go get github.com/donnie4w/timgo
 
 ```go
 //建立操作对象
-tc := timgo.NewTimClient("192.168.2.11", "5080", false)
+tc := timgo.NewTimClient(false,"192.168.2.11", "5080")
 
 //实现消息接收后的处理事件
 tc.MessageHandler(func(tm *TimMessage) {})
