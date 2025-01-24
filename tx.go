@@ -160,7 +160,7 @@ func (ts *tx) loginByAccount(username, pwd, domain, resource string, termtyp int
 
 // login with token
 // 使用token登录
-func (ts *tx) loginByToken(token int64, resource string, termtyp int8, extend map[string]string) []byte {
+func (ts *tx) loginByToken(token string, resource string, termtyp int8, extend map[string]string) []byte {
 	ts.ta.Token, ts.ta.Resource, ts.ta.Termtyp, ts.ta.Extend = &token, &resource, &termtyp, extend
 	buf := NewBuffer()
 	buf.WriteByte(byte(TIMAUTH))
@@ -186,16 +186,16 @@ func (ts *tx) _message(timtype TIMTYPE, mstype, odType int8, msg string, to stri
 	if to != "" {
 		tm.ToTid = &Tid{Node: to}
 	}
-	if udshow > 0 {
+	if udshow != 0 {
 		tm.Udshow = &udshow
 	}
-	if udtype > 0 {
+	if udtype != 0 {
 		tm.Udtype = &udtype
 	}
 	if msg != "" {
 		tm.DataString = &msg
 	}
-	if msgId > 0 {
+	if msgId != 0 {
 		tm.Mid = &msgId
 	}
 	buf := NewBuffer()
@@ -244,10 +244,10 @@ func (ts *tx) stream(msg []byte, to string, room string, udShow, udType int16) [
 	if to != "" {
 		tm.ToTid = &Tid{Node: to}
 	}
-	if udShow > 0 {
+	if udShow != 0 {
 		tm.Udshow = &udShow
 	}
-	if udType > 0 {
+	if udType != 0 {
 		tm.Udtype = &udType
 	}
 	tm.DataBinary = msg
@@ -273,13 +273,13 @@ func (ts *tx) _presence(timtype TIMTYPE, to string, show int16, status string, t
 	if to != "" {
 		tp.ToTid = &Tid{Node: to}
 	}
-	if show > 0 {
+	if show != 0 {
 		tp.Show = &show
 	}
 	if status != "" {
 		tp.Status = &status
 	}
-	if subStatus > 0 {
+	if subStatus != 0 {
 		tp.SubStatus = &subStatus
 	}
 	buf := NewBuffer()
@@ -474,7 +474,7 @@ func (ts *tx) virtualroom(rtype int32, vnode, unode string, i int64) []byte {
 	if unode != "" {
 		tr.Node2 = &unode
 	}
-	if i > 0 {
+	if i != 0 {
 		tr.ReqInt = &i
 	}
 	buf.WriteByte(byte(TIMVROOM))
