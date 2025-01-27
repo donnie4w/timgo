@@ -3002,7 +3002,7 @@ type TimAuth struct {
 	Domain *string `thrift:"domain,3" db:"domain" json:"domain,omitempty"`
 	Resource *string `thrift:"resource,4" db:"resource" json:"resource,omitempty"`
 	Termtyp *int8 `thrift:"termtyp,5" db:"termtyp" json:"termtyp,omitempty"`
-	Token *int64 `thrift:"token,6" db:"token" json:"token,omitempty"`
+	Token *string `thrift:"token,6" db:"token" json:"token,omitempty"`
 	Extend map[string]string `thrift:"extend,7" db:"extend" json:"extend,omitempty"`
 }
 
@@ -3055,9 +3055,9 @@ func (p *TimAuth) GetTermtyp() int8 {
 	return *p.Termtyp
 }
 
-var TimAuth_Token_DEFAULT int64
+var TimAuth_Token_DEFAULT string
 
-func (p *TimAuth) GetToken() int64 {
+func (p *TimAuth) GetToken() string {
 	if !p.IsSetToken() {
 		return TimAuth_Token_DEFAULT
 	}
@@ -3165,7 +3165,7 @@ func (p *TimAuth) Read(ctx context.Context, iprot thrift.TProtocol) error {
 				}
 			}
 		case 6:
-			if fieldTypeId == thrift.I64 {
+			if fieldTypeId == thrift.STRING {
 				if err := p.ReadField6(ctx, iprot); err != nil {
 					return err
 				}
@@ -3246,7 +3246,7 @@ func (p *TimAuth) ReadField5(ctx context.Context, iprot thrift.TProtocol) error 
 }
 
 func (p *TimAuth) ReadField6(ctx context.Context, iprot thrift.TProtocol) error {
-	if v, err := iprot.ReadI64(ctx); err != nil {
+	if v, err := iprot.ReadString(ctx); err != nil {
 		return thrift.PrependError("error reading field 6: ", err)
 	} else {
 		p.Token = &v
@@ -3381,10 +3381,10 @@ func (p *TimAuth) writeField5(ctx context.Context, oprot thrift.TProtocol) (err 
 
 func (p *TimAuth) writeField6(ctx context.Context, oprot thrift.TProtocol) (err error) {
 	if p.IsSetToken() {
-		if err := oprot.WriteFieldBegin(ctx, "token", thrift.I64, 6); err != nil {
+		if err := oprot.WriteFieldBegin(ctx, "token", thrift.STRING, 6); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T write field begin error 6:token: ", p), err)
 		}
-		if err := oprot.WriteI64(ctx, int64(*p.Token)); err != nil {
+		if err := oprot.WriteString(ctx, string(*p.Token)); err != nil {
 			return thrift.PrependError(fmt.Sprintf("%T.token (6) field write error: ", p), err)
 		}
 		if err := oprot.WriteFieldEnd(ctx); err != nil {
@@ -4219,6 +4219,7 @@ func (p *TimPresence) Validate() error {
 //  - Udshow
 //  - Extend
 //  - Extra
+//  - ToList
 // 
 type TimMessage struct {
 	MsType int8 `thrift:"msType,1,required" db:"msType" json:"msType"`
@@ -4237,6 +4238,7 @@ type TimMessage struct {
 	Udshow *int16 `thrift:"udshow,14" db:"udshow" json:"udshow,omitempty"`
 	Extend map[string]string `thrift:"extend,15" db:"extend" json:"extend,omitempty"`
 	Extra map[string][]byte `thrift:"extra,16" db:"extra" json:"extra,omitempty"`
+	ToList []string `thrift:"ToList,17" db:"ToList" json:"ToList,omitempty"`
 }
 
 func NewTimMessage() *TimMessage {
@@ -4375,6 +4377,13 @@ func (p *TimMessage) GetExtra() map[string][]byte {
 	return p.Extra
 }
 
+var TimMessage_ToList_DEFAULT []string
+
+
+func (p *TimMessage) GetToList() []string {
+	return p.ToList
+}
+
 func (p *TimMessage) IsSetID() bool {
 	return p.ID != nil
 }
@@ -4429,6 +4438,10 @@ func (p *TimMessage) IsSetExtend() bool {
 
 func (p *TimMessage) IsSetExtra() bool {
 	return p.Extra != nil
+}
+
+func (p *TimMessage) IsSetToList() bool {
+	return p.ToList != nil
 }
 
 func (p *TimMessage) Read(ctx context.Context, iprot thrift.TProtocol) error {
@@ -4603,6 +4616,16 @@ func (p *TimMessage) Read(ctx context.Context, iprot thrift.TProtocol) error {
 		case 16:
 			if fieldTypeId == thrift.MAP {
 				if err := p.ReadField16(ctx, iprot); err != nil {
+					return err
+				}
+			} else {
+				if err := iprot.Skip(ctx, fieldTypeId); err != nil {
+					return err
+				}
+			}
+		case 17:
+			if fieldTypeId == thrift.LIST {
+				if err := p.ReadField17(ctx, iprot); err != nil {
 					return err
 				}
 			} else {
@@ -4812,6 +4835,28 @@ func (p *TimMessage) ReadField16(ctx context.Context, iprot thrift.TProtocol) er
 	return nil
 }
 
+func (p *TimMessage) ReadField17(ctx context.Context, iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin(ctx)
+	if err != nil {
+		return thrift.PrependError("error reading list begin: ", err)
+	}
+	tSlice := make([]string, 0, size)
+	p.ToList = tSlice
+	for i := 0; i < size; i++ {
+		var _elem34 string
+		if v, err := iprot.ReadString(ctx); err != nil {
+			return thrift.PrependError("error reading field 0: ", err)
+		} else {
+			_elem34 = v
+		}
+		p.ToList = append(p.ToList, _elem34)
+	}
+	if err := iprot.ReadListEnd(ctx); err != nil {
+		return thrift.PrependError("error reading list end: ", err)
+	}
+	return nil
+}
+
 func (p *TimMessage) Write(ctx context.Context, oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin(ctx, "TimMessage"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
@@ -4833,6 +4878,7 @@ func (p *TimMessage) Write(ctx context.Context, oprot thrift.TProtocol) error {
 		if err := p.writeField14(ctx, oprot); err != nil { return err }
 		if err := p.writeField15(ctx, oprot); err != nil { return err }
 		if err := p.writeField16(ctx, oprot); err != nil { return err }
+		if err := p.writeField17(ctx, oprot); err != nil { return err }
 	}
 	if err := oprot.WriteFieldStop(ctx); err != nil {
 		return thrift.PrependError("write field stop error: ", err)
@@ -5101,6 +5147,29 @@ func (p *TimMessage) writeField16(ctx context.Context, oprot thrift.TProtocol) (
 	return err
 }
 
+func (p *TimMessage) writeField17(ctx context.Context, oprot thrift.TProtocol) (err error) {
+	if p.IsSetToList() {
+		if err := oprot.WriteFieldBegin(ctx, "ToList", thrift.LIST, 17); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 17:ToList: ", p), err)
+		}
+		if err := oprot.WriteListBegin(ctx, thrift.STRING, len(p.ToList)); err != nil {
+			return thrift.PrependError("error writing list begin: ", err)
+		}
+		for _, v := range p.ToList {
+			if err := oprot.WriteString(ctx, string(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteListEnd(ctx); err != nil {
+			return thrift.PrependError("error writing list end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(ctx); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 17:ToList: ", p), err)
+		}
+	}
+	return err
+}
+
 func (p *TimMessage) Equals(other *TimMessage) bool {
 	if p == other {
 		return true
@@ -5163,13 +5232,18 @@ func (p *TimMessage) Equals(other *TimMessage) bool {
 	}
 	if len(p.Extend) != len(other.Extend) { return false }
 	for k, _tgt := range p.Extend {
-		_src34 := other.Extend[k]
-		if _tgt != _src34 { return false }
+		_src35 := other.Extend[k]
+		if _tgt != _src35 { return false }
 	}
 	if len(p.Extra) != len(other.Extra) { return false }
 	for k, _tgt := range p.Extra {
-		_src35 := other.Extra[k]
-		if bytes.Compare(_tgt, _src35) != 0 { return false }
+		_src36 := other.Extra[k]
+		if bytes.Compare(_tgt, _src36) != 0 { return false }
+	}
+	if len(p.ToList) != len(other.ToList) { return false }
+	for i, _tgt := range p.ToList {
+		_src37 := other.ToList[i]
+		if _tgt != _src37 { return false }
 	}
 	return true
 }
@@ -5705,13 +5779,13 @@ func (p *TimNodes) ReadField2(ctx context.Context, iprot thrift.TProtocol) error
 	tSlice := make([]string, 0, size)
 	p.Nodelist = tSlice
 	for i := 0; i < size; i++ {
-		var _elem36 string
+		var _elem38 string
 		if v, err := iprot.ReadString(ctx); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_elem36 = v
+			_elem38 = v
 		}
-		p.Nodelist = append(p.Nodelist, _elem36)
+		p.Nodelist = append(p.Nodelist, _elem38)
 	}
 	if err := iprot.ReadListEnd(ctx); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -5727,17 +5801,17 @@ func (p *TimNodes) ReadField3(ctx context.Context, iprot thrift.TProtocol) error
 	tMap := make(map[string]*TimUserBean, size)
 	p.Usermap = tMap
 	for i := 0; i < size; i++ {
-		var _key37 string
+		var _key39 string
 		if v, err := iprot.ReadString(ctx); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_key37 = v
+			_key39 = v
 		}
-		_val38 := &TimUserBean{}
-		if err := _val38.Read(ctx, iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _val38), err)
+		_val40 := &TimUserBean{}
+		if err := _val40.Read(ctx, iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _val40), err)
 		}
-		p.Usermap[_key37] = _val38
+		p.Usermap[_key39] = _val40
 	}
 	if err := iprot.ReadMapEnd(ctx); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -5753,17 +5827,17 @@ func (p *TimNodes) ReadField4(ctx context.Context, iprot thrift.TProtocol) error
 	tMap := make(map[string]*TimRoomBean, size)
 	p.Roommap = tMap
 	for i := 0; i < size; i++ {
-		var _key39 string
+		var _key41 string
 		if v, err := iprot.ReadString(ctx); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_key39 = v
+			_key41 = v
 		}
-		_val40 := &TimRoomBean{}
-		if err := _val40.Read(ctx, iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _val40), err)
+		_val42 := &TimRoomBean{}
+		if err := _val42.Read(ctx, iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _val42), err)
 		}
-		p.Roommap[_key39] = _val40
+		p.Roommap[_key41] = _val42
 	}
 	if err := iprot.ReadMapEnd(ctx); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -5912,18 +5986,18 @@ func (p *TimNodes) Equals(other *TimNodes) bool {
 	if p.Ntype != other.Ntype { return false }
 	if len(p.Nodelist) != len(other.Nodelist) { return false }
 	for i, _tgt := range p.Nodelist {
-		_src41 := other.Nodelist[i]
-		if _tgt != _src41 { return false }
+		_src43 := other.Nodelist[i]
+		if _tgt != _src43 { return false }
 	}
 	if len(p.Usermap) != len(other.Usermap) { return false }
 	for k, _tgt := range p.Usermap {
-		_src42 := other.Usermap[k]
-		if !_tgt.Equals(_src42) { return false }
+		_src44 := other.Usermap[k]
+		if !_tgt.Equals(_src44) { return false }
 	}
 	if len(p.Roommap) != len(other.Roommap) { return false }
 	for k, _tgt := range p.Roommap {
-		_src43 := other.Roommap[k]
-		if !_tgt.Equals(_src43) { return false }
+		_src45 := other.Roommap[k]
+		if !_tgt.Equals(_src45) { return false }
 	}
 	if p.Node != other.Node {
 		if p.Node == nil || other.Node == nil {
@@ -6062,11 +6136,11 @@ func (p *TimMessageList) ReadField2(ctx context.Context, iprot thrift.TProtocol)
 	tSlice := make([]*TimMessage, 0, size)
 	p.MessageList = tSlice
 	for i := 0; i < size; i++ {
-		_elem44 := &TimMessage{}
-		if err := _elem44.Read(ctx, iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem44), err)
+		_elem46 := &TimMessage{}
+		if err := _elem46.Read(ctx, iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem46), err)
 		}
-		p.MessageList = append(p.MessageList, _elem44)
+		p.MessageList = append(p.MessageList, _elem46)
 	}
 	if err := iprot.ReadListEnd(ctx); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -6143,8 +6217,8 @@ func (p *TimMessageList) Equals(other *TimMessageList) bool {
 	}
 	if len(p.MessageList) != len(other.MessageList) { return false }
 	for i, _tgt := range p.MessageList {
-		_src45 := other.MessageList[i]
-		if !_tgt.Equals(_src45) { return false }
+		_src47 := other.MessageList[i]
+		if !_tgt.Equals(_src47) { return false }
 	}
 	return true
 }
