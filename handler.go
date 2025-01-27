@@ -6,282 +6,377 @@
 package timgo
 
 import (
-	"fmt"
-	"github.com/donnie4w/gofer/httpclient"
+	"errors"
 	. "github.com/donnie4w/gofer/thrift"
-	wss "github.com/donnie4w/gofer/websocket"
 	. "github.com/donnie4w/timgo/stub"
-	"strings"
-	"time"
 )
 
-type TimClient struct {
-	addr                   string
-	pingCount              int
-	handler                *wss.Handler
-	cfg                    *wss.Config
-	isClose                bool
-	ts                     *tx
-	syncUrl                string
-	messageHandler         func(*TimMessage)
-	presenceHandler        func(*TimPresence)
-	streamHandler          func(*TimStream)
-	nodesHandler           func(*TimNodes)
-	ackHandler             func(*TimAck)
-	pullmessageHandler     func(*TimMessageList)
-	offlineMsgHandler      func(*TimMessageList)
-	offlinemsgEndHandler   func()
-	bigStringHandler       func([]byte)
-	bigBinaryHandler       func([]byte)
-	bigBinaryStreamHandler func([]byte)
-	AfterLoginEvent        func()
-}
-
-func NewTimClient(tls bool, ip string, port int) (tc *TimClient) {
-	if addr := formatUrl(ip, port, tls); addr != "" {
-		tc = &TimClient{addr: addr, ts: &tx{&TimAuth{}}}
-		tc.defaultInit()
-	}
-	return
-}
-
-func NewTimClientWithConfig(ip string, port int, tls bool, conf *wss.Config) (tc *TimClient) {
-	if addr := formatUrl(ip, port, tls); addr != "" {
-		tc = &TimClient{addr: addr, ts: &tx{&TimAuth{}}}
-		conf.Url = addr
-		tc.init(conf)
-	}
-	return
-}
-
-func (tc *TimClient) login() (err error) {
-	if tc.handler != nil {
-		err = tc.handler.Send(tc.ts.login())
-	}
-	return
-}
-
-func formatUrl(ip string, port int, tls bool) (url string) {
-	if ip == "" || port > 65535 || port < 0 {
-		return ""
-	}
-	if tls {
-		url = fmt.Sprint("wss://", ip, ":", port)
+// Register	with username and password
+// domain can be set "" where is not requied；Different domains cannot communicate with each other
+// 如果不需要使用 domain（域）时，可设置为空字符串，不同域无法相互通讯
+func (tc *TimClient) Register(username, pwd, domain string) (ack *TimAck, err error) {
+	if bs, err := sendsync(tc.syncUrl, tc.cfg.Origin, tc.ts.register(username, pwd, domain)); err == nil && bs != nil {
+		ack, err = TDecode[*TimAck](bs[1:], &TimAck{})
 	} else {
-		url = fmt.Sprint("ws://", ip, ":", port)
+		err = errors.New("register failed")
 	}
 	return
 }
 
-func (tc *TimClient) init(config *wss.Config) {
-	tc.cfg = config
-	tc.syncUrl = parse(tc.cfg)
-	tc.cfg.OnError = func(_ *wss.Handler, err error) {
-		logger.Error("OnError:", err)
-		tc.closeconnect()
-		<-time.After(time.Second << 2)
-		if !tc.isClose {
-			tc.connect()
-		}
-	}
-	tc.cfg.OnMessage = func(_ *wss.Handler, msg []byte) {
-		defer func() {
-			if e := recover(); e != nil {
-				logger.Error(e)
-			}
-		}()
-		t := TIMTYPE(msg[0] & 0x7f)
-		if msg[0]&0x80 == 0x80 {
-			tc.handler.Send(append([]byte{byte(TIMACK)}, msg[1:5]...))
-			msg = msg[5:]
-		} else {
-			msg = msg[1:]
-		}
-		tc.pingCount = 0
-		tc.doMsg(t, msg)
-	}
-}
-
-func (tc *TimClient) defaultInit() {
-	tc.init(&wss.Config{TimeOut: 15 * time.Second, Url: tc.addr + "/tim", Origin: "https://github.com/donnie4w/tim"})
-}
-
-func (tc *TimClient) TimeOut(t time.Duration) {
-	tc.cfg.TimeOut = t
-}
-
-func (tc *TimClient) connect() (err error) {
-	tc.isClose = false
-	tc.pingCount = 0
-	if tc.handler, err = wss.NewHandler(tc.cfg); err == nil {
-		if err = tc.login(); err == nil {
-			go tc.ping()
-		}
-	} else {
-		fmt.Println(err)
-		<-time.After(4 * time.Second)
-		logger.Warn("reconnect")
-		tc.connect()
-	}
-	<-time.After(time.Second)
-	return
-}
-
-func (tc *TimClient) close() (err error) {
-	tc.isClose = true
-	return tc.closeconnect()
-}
-
-func (tc *TimClient) closeconnect() (err error) {
-	if tc.handler != nil {
-		err = tc.handler.Close()
-	}
-	return
-}
-
-func (tc *TimClient) doMsg(t TIMTYPE, bs []byte) {
-	switch t {
-	case TIMPING:
-		if tc.pingCount > 0 {
-			tc.pingCount--
-		}
-	case TIMACK:
-		if tc.ackHandler != nil {
-			if ta, err := TDecode(bs, &TimAck{}); ta != nil {
-				tc.ackHandler(ta)
+// Token get a token for login
+func (tc *TimClient) Token(username, pwd, domain string) (token int64, err error) {
+	if bs, err := sendsync(tc.syncUrl, tc.cfg.Origin, tc.ts.token(username, pwd, domain)); err == nil && bs != nil {
+		if ta, err := TDecode[*TimAck](bs[1:], &TimAck{}); err == nil {
+			if ok := ta.Ok; !ok {
+				err = errors.New(*ta.Error.Info)
 			} else {
-				logger.Error(err)
+				token = *ta.T
 			}
 		}
-	case TIMMESSAGE:
-		if tc.messageHandler != nil {
-			if tm, _ := TDecode(bs, &TimMessage{}); tm != nil {
-				tc.messageHandler(tm)
-			}
-		}
-	case TIMPRESENCE:
-		if tc.presenceHandler != nil {
-			if tp, _ := TDecode(bs, &TimPresence{}); tp != nil {
-				tc.presenceHandler(tp)
-			}
-		}
-	case TIMNODES:
-		if tc.nodesHandler != nil {
-			if tr, _ := TDecode(bs, &TimNodes{}); tr != nil {
-				tc.nodesHandler(tr)
-			}
-		}
-	case TIMPULLMESSAGE:
-		if tc.pullmessageHandler != nil {
-			if tm, _ := TDecode(bs, &TimMessageList{}); tm != nil {
-				tc.pullmessageHandler(tm)
-			}
-		}
-	case TIMOFFLINEMSG:
-		if tc.offlineMsgHandler != nil {
-			if tm, _ := TDecode(bs, &TimMessageList{}); tm != nil {
-				tc.offlineMsgHandler(tm)
-			}
-		}
-	case TIMOFFLINEMSGEND:
-		if tc.offlinemsgEndHandler != nil {
-			tc.offlinemsgEndHandler()
-		}
-	case TIMSTREAM:
-		if tc.streamHandler != nil {
-			if ts, _ := TDecode(bs, &TimStream{}); ts != nil {
-				tc.streamHandler(ts)
-			}
-		}
-	case TIMBIGSTRING:
-		if tc.bigStringHandler != nil {
-			tc.bigStringHandler(bs)
-		}
-	case TIMBIGBINARY:
-		if tc.bigBinaryHandler != nil {
-			tc.bigBinaryHandler(bs)
-		}
-	case TIMBIGBINARYSTREAM:
-		if tc.bigBinaryStreamHandler != nil {
-			tc.bigBinaryStreamHandler(bs)
-		}
-	default:
-		logger.Warn("undisposed >>>>>", t, " ,data length:", len(bs))
+	} else {
+		err = errors.New("get token failed")
 	}
+	return
 }
 
-func (tc *TimClient) ping() {
-	defer recoverable()
-	ticker := time.NewTicker(15 * time.Second)
-	for !tc.isClose {
-		select {
-		case <-ticker.C:
-			tc.pingCount++
-			if tc.isClose {
-				goto END
-			}
-			if err := tc.handler.Send(tc.ts.ping()); err != nil || tc.pingCount > 3 {
-				logger.Error("ping over count>>", tc.pingCount, err)
-				tc.closeconnect()
-				goto END
-			}
-		}
-	}
-END:
+// Login resource is the terminal information defined by the developer. For example, phone model: HUAWEI P50 Pro, iPhone 11 Pro
+// if resource is not required, pass ""
+// resource是开发者自定义的终端信息，一般是登录设备信息，如 HUAWEI P50 Pro，若不使用，赋空值即可
+func (tc *TimClient) Login(name, pwd, domain, resource string, termtyp int8, extend map[string]string) (err error) {
+	tc.closeconnect()
+	tc.ts.loginByAccount(name, pwd, domain, resource, termtyp, extend)
+	return tc.connect()
 }
 
-func (tc *TimClient) MessageHandler(handler func(*TimMessage)) {
-	tc.messageHandler = handler
+// LoginByToken login with token
+func (tc *TimClient) LoginByToken(token string, resource string, termtyp int8, extend map[string]string) (err error) {
+	tc.closeconnect()
+	tc.ts.loginByToken(token, resource, termtyp, extend)
+	return tc.connect()
 }
 
-func (tc *TimClient) PresenceHandler(handler func(*TimPresence)) {
-	tc.presenceHandler = handler
+// Logout 退出登录
+func (tc *TimClient) Logout() (err error) {
+	tc.ts = &tx{NewTimAuth()}
+	return tc.close()
 }
 
-func (tc *TimClient) AckHandler(handler func(*TimAck)) {
-	tc.ackHandler = handler
+// ModifyPwd  password
+func (tc *TimClient) ModifyPwd(oldpwd, newpwd string) (err error) {
+	return tc.handler.Send(tc.ts.modifyPwd(oldpwd, newpwd))
 }
 
-func (tc *TimClient) NodesHandler(handler func(*TimNodes)) {
-	tc.nodesHandler = handler
+// MessageToUser
+// send message to a user
+// showType and textType is a value defined by the developer and is sent to the peer terminal as is
+// showType 和 textType 为开发者自定义字段，会原样发送到对方的终端，由开发者自定义解析，
+// If showType or textType  is not required, pass 0
+// showType 或 textType  不使用时，传默认值0
+func (tc *TimClient) MessageToUser(user string, msg string, udshow int16, udtype int16, extend map[string]string, extra map[string][]byte) (err error) {
+	return tc.handler.Send(tc.ts.message2Friend(msg, user, udshow, udtype, extend, extra))
 }
 
-func (tc *TimClient) PullmessageHandler(handler func(*TimMessageList)) {
-	tc.pullmessageHandler = handler
+// RevokeMessage
+// revoke the message 撤回信息
+// mid is message's id
+// mid and to is  required
+func (tc *TimClient) RevokeMessage(mid int64, to, room string, msg string, udshow int16, udtype int16) (err error) {
+	return tc.handler.Send(tc.ts.revokeMessage(mid, to, room, msg, udshow, udtype))
 }
 
-func (tc *TimClient) OfflineMsgHandler(handler func(*TimMessageList)) {
-	tc.offlineMsgHandler = handler
+// BurnMessage
+// burn After Reading  阅后即焚
+// mid is message's id
+// mid and to is  required
+func (tc *TimClient) BurnMessage(mid int64, to string, msg string, udshow int16, udtype int16) (err error) {
+	return tc.handler.Send(tc.ts.burnMessage(mid, msg, to, udshow, udtype))
 }
 
-func (tc *TimClient) OfflineMsgEndHandler(handler func()) {
-	tc.offlinemsgEndHandler = handler
+// MessageToRoom
+// send message to a room
+func (tc *TimClient) MessageToRoom(room string, msg string, udshow int16, udtype int16, extend map[string]string, extra map[string][]byte) (err error) {
+	return tc.handler.Send(tc.ts.message2Room(msg, room, udshow, udtype, extend, extra))
 }
 
-func (tc *TimClient) StreamHandler(handler func(*TimStream)) {
-	tc.streamHandler = handler
+// MessageByPrivacy
+// send a message to a room member
+func (tc *TimClient) MessageByPrivacy(user, room string, msg string, udshow int16, udtype int16, extend map[string]string, extra map[string][]byte) (err error) {
+	return tc.handler.Send(tc.ts.messageByPrivacy(msg, user, room, udshow, udtype, extend, extra))
 }
 
-func recoverable() {
-	if err := recover(); err != nil {
-		logger.Error(err)
-	}
+// StreamToUser
+// send  stream data to user
+func (tc *TimClient) StreamToUser(to string, msg []byte, udShow, udType int16) (err error) {
+	return tc.handler.Send(tc.ts.stream(msg, to, "", udShow, udType))
 }
 
-func parse(cfg *wss.Config) string {
-	ss := strings.Split(cfg.Url, "//")
-	s := strings.Split(ss[1], "/")
-	url := "http"
-	if strings.HasPrefix(ss[0], "wss:") {
-		url = "https"
-	}
-	return url + "://" + s[0] + "/tim2"
+// StreamToRoom
+// send  stream data to room
+func (tc *TimClient) StreamToRoom(room string, msg []byte, udShow, udType int16) (err error) {
+	return tc.handler.Send(tc.ts.stream(msg, "", room, udShow, udType))
 }
 
-func sendsync(url, origin string, bs []byte) ([]byte, error) {
-	m := map[string]string{}
-	if origin != "" {
-		m["Origin"] = origin
-	}
-	return httpclient.Post3(bs, true, url, m, nil)
+// PresenceToUser
+// send presence to other user
+// 发送状态给其他账号
+func (tc *TimClient) PresenceToUser(to string, show int16, status string, subStatus int8, extend map[string]string, extra map[string][]byte) (err error) {
+	return tc.handler.Send(tc.ts.presence(to, show, status, subStatus, extend, extra))
+}
+
+// PresenceToList
+// send presence to other user list
+func (tc *TimClient) PresenceToList(toList []string, show int16, status string, subStatus int8, extend map[string]string, extra map[string][]byte) (err error) {
+	return tc.handler.Send(tc.ts.presenceList(show, status, subStatus, extend, extra, toList))
+}
+
+// BroadPresence
+// broad the presence and substatus to all the friends
+// 向所有好友广播状态和订阅状态
+func (tc *TimClient) BroadPresence(subStatus int8, show int16, status string) (err error) {
+	return tc.handler.Send(tc.ts.broadPresence(subStatus, show, status))
+}
+
+// Roster
+// triggers tim to send user rosters
+// 触发tim服务器发送用户花名册
+func (tc *TimClient) Roster() (err error) {
+	return tc.handler.Send(tc.ts.roster())
+}
+
+// Addroster  send request to the account for add friend
+func (tc *TimClient) Addroster(node string, msg string) (err error) {
+	return tc.handler.Send(tc.ts.addroster(node, msg))
+}
+
+// Rmroster
+// remove a relationship with a specified account
+// 移除与指定账号的关系
+func (tc *TimClient) Rmroster(node string) (err error) {
+	return tc.handler.Send(tc.ts.rmroster(node))
+}
+
+// Blockroster
+// Block specified account
+// 拉黑指定账号
+func (tc *TimClient) Blockroster(node string) (err error) {
+	return tc.handler.Send(tc.ts.blockroster(node))
+}
+
+// PullUserMessage
+// pull message with user
+// 拉取用户聊天消息
+func (tc *TimClient) PullUserMessage(to string, mid, limit int64) (err error) {
+	return tc.handler.Send(tc.ts.pullmsg(1, to, mid, limit))
+}
+
+// PullRoomMessage
+// pull message of group
+// 拉取群信息
+func (tc *TimClient) PullRoomMessage(to string, mid, limit int64) (err error) {
+	return tc.handler.Send(tc.ts.pullmsg(2, to, mid, limit))
+}
+
+// OfflineMsg
+// triggers tim to send the offlien message
+// 触发tim服务器发送离线信息
+func (tc *TimClient) OfflineMsg() (err error) {
+	return tc.handler.Send(tc.ts.offlinemsg())
+}
+
+// UserRoom
+// triggers tim to send the user's ROOM account
+// 触发tim服务器发送用户的群账号
+func (tc *TimClient) UserRoom() (err error) {
+	return tc.handler.Send(tc.ts.userroom())
+}
+
+// RoomUsers
+// triggers tim to send the ROOM member account
+// 触发tim服务器发送群成员账号
+func (tc *TimClient) RoomUsers(node string) (err error) {
+	return tc.handler.Send(tc.ts.roomusers(node))
+}
+
+// NewRoom
+// creating a room, provide the room name and room type
+// 创建群，需提供群名称和群类型
+func (tc *TimClient) NewRoom(gtype ROOMTYPE, roomname string) (err error) {
+	return tc.handler.Send(tc.ts.newroom(int64(gtype), roomname))
+}
+
+// AddRoom
+// send a request to join the group
+// 发送一个加入群的请求
+func (tc *TimClient) AddRoom(node, msg string) (err error) {
+	return tc.handler.Send(tc.ts.addroom(node, msg))
+}
+
+// PullInRoom
+// pull a account into the group
+// 将用户拉入群
+func (tc *TimClient) PullInRoom(roomNode, userNode string) (err error) {
+	return tc.handler.Send(tc.ts.pullroom(roomNode, userNode))
+}
+
+// RejectRoom
+// reject a account to join into the group
+// 拒绝用户加入群
+func (tc *TimClient) RejectRoom(roomNode, userNode, msg string) (err error) {
+	return tc.handler.Send(tc.ts.nopassroom(roomNode, userNode, msg))
+}
+
+// KickRoom
+// Kick a account out of the group
+// 将用户踢出群
+func (tc *TimClient) KickRoom(roomNode, userNode string) (err error) {
+	return tc.handler.Send(tc.ts.kickroom(roomNode, userNode))
+}
+
+// LeaveRoom
+// leave group
+// 退出群
+func (tc *TimClient) LeaveRoom(roomNode string) (err error) {
+	return tc.handler.Send(tc.ts.leaveroom(roomNode))
+}
+
+// CancelRoom
+// Cancel a group
+// 注销群
+func (tc *TimClient) CancelRoom(roomNode string) (err error) {
+	return tc.handler.Send(tc.ts.cancelroom(roomNode))
+}
+
+// BlockRoom
+// block the group
+// 拉黑群，拒绝被群主拉入群
+func (tc *TimClient) BlockRoom(roomNode string) (err error) {
+	return tc.handler.Send(tc.ts.blockroom(roomNode))
+}
+
+// BlockRoomMember
+// block the group member or the account join into group
+// 拉黑群成员或阻止其他账号入群
+func (tc *TimClient) BlockRoomMember(roomNode, toNode string) (err error) {
+	return tc.handler.Send(tc.ts.blockroomMember(roomNode, toNode))
+}
+
+// BlockRosterList
+// blocklist of user
+// 用户黑名单
+func (tc *TimClient) BlockRosterList() (err error) {
+	return tc.handler.Send(tc.ts.blockrosterlist())
+}
+
+// BlockRoomList
+// blocklist of user group
+// 用户群黑名单
+func (tc *TimClient) BlockRoomList() (err error) {
+	return tc.handler.Send(tc.ts.blockroomlist())
+}
+
+// BlockRoomMemberlist
+// blocklist of group
+// 群黑名单
+func (tc *TimClient) BlockRoomMemberlist(node string) (err error) {
+	return tc.handler.Send(tc.ts.blockroomMemberlist(node))
+}
+
+// BigDataString
+// send big string
+func (tc *TimClient) BigDataString(node, datastring string) (err error) {
+	return tc.handler.Send(tc.ts.bigString(node, datastring))
+}
+
+// BigDataBinary
+// send big binary
+func (tc *TimClient) BigDataBinary(node string, dataBinary []byte) (err error) {
+	return tc.handler.Send(tc.ts.bigBinary(node, dataBinary))
+}
+
+// VirtualroomRegister
+// creating a Virtual room
+// 创建虚拟房间
+func (tc *TimClient) VirtualroomRegister() (err error) {
+	return tc.handler.Send(tc.ts.virtualroom(1, "", "", 0))
+}
+
+// VirtualroomRemove
+// creating a Virtual room
+// 销毁虚拟房间
+func (tc *TimClient) VirtualroomRemove(roomNode string) (err error) {
+	return tc.handler.Send(tc.ts.virtualroom(2, roomNode, "", 0))
+}
+
+// VirtualroomAddAuth
+// add push stream data permissions for virtual rooms to a account
+// 给账户添加向虚拟房间推送流数据的权限
+func (tc *TimClient) VirtualroomAddAuth(roomNode string, tonode string) (err error) {
+	return tc.handler.Send(tc.ts.virtualroom(3, roomNode, tonode, 0))
+}
+
+// VirtualroomDelAuth
+// delete the push stream data permissions for virtual rooms to a account
+// 删除用户向虚拟房间推送流数据的权限
+func (tc *TimClient) VirtualroomDelAuth(roomNode string, tonode string) (err error) {
+	return tc.handler.Send(tc.ts.virtualroom(4, roomNode, tonode, 0))
+}
+
+// VirtualroomSub
+// Subscribe the stream data of the virtual room
+// 向虚拟房间订阅流数据
+func (tc *TimClient) VirtualroomSub(roomNode string) (err error) {
+	return tc.handler.Send(tc.ts.virtualroom(5, roomNode, "", 0))
+}
+
+// VirtualroomSubBinary
+// Subscribe the stream data of the virtual room
+// 向虚拟房间订阅流数据
+func (tc *TimClient) VirtualroomSubBinary(roomNode string) (err error) {
+	return tc.handler.Send(tc.ts.virtualroom(5, roomNode, "", 1))
+}
+
+// VirtualroomSubCancel
+// cancel subscribe the stream data of the virtual room
+// 取消订阅虚拟房间数据
+func (tc *TimClient) VirtualroomSubCancel(roomNode string) (err error) {
+	return tc.handler.Send(tc.ts.virtualroom(6, roomNode, "", 0))
+}
+
+// PushStream
+// push the stream data to the virtual room
+// body: body is stream data
+// dtype : dtype is a data type defined by the developer and can be set to 0 if it is not required
+// 推送流数据到虚拟房间
+// body ：body是流数据
+// dtype：dtype 是开发者自定义的数据类型，若不需要，可以设置为0
+func (tc *TimClient) PushStream(virtualroom string, body []byte, dtype int8) (err error) {
+	return tc.handler.Send(tc.ts.pushstream(virtualroom, body, dtype))
+}
+
+// UserInfo
+// get user information
+// 获取用户资料
+func (tc *TimClient) UserInfo(node ...string) (err error) {
+	return tc.handler.Send(tc.ts.nodeinfo(NODEINFO_USERINFO, node, nil, nil))
+}
+
+// RoomInfo
+// get group information
+// 获取群资料
+func (tc *TimClient) RoomInfo(node ...string) (err error) {
+	return tc.handler.Send(tc.ts.nodeinfo(NODEINFO_ROOMINFO, node, nil, nil))
+}
+
+// ModifyUserInfo
+// modify user information
+// 修改用户资料
+func (tc *TimClient) ModifyUserInfo(tu *TimUserBean) (err error) {
+	return tc.handler.Send(tc.ts.nodeinfo(NODEINFO_MODIFYUSER, nil, map[string]*TimUserBean{"": tu}, nil))
+}
+
+// ModifyRoomInfo
+// modify group information
+// 修改群资料
+func (tc *TimClient) ModifyRoomInfo(roomNode string, tr *TimRoomBean) (err error) {
+	return tc.handler.Send(tc.ts.nodeinfo(NODEINFO_MODIFYROOM, nil, nil, map[string]*TimRoomBean{roomNode: tr}))
 }
