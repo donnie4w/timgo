@@ -21,18 +21,19 @@ func register(username, pwd string) {
 }
 
 func Test_login(t *testing.T) {
-	//login("tim1", "123")
-	login("tim2", "123")
+	err := login("tim2", "123")
+	t.Error(err)
 	time.Sleep(10 * time.Minute)
 }
 
 // 登录
-func login(username, pwd string) {
-	tclient(50001).Login(username, pwd, "tlnet.top", "web", 1, nil)
+func login(username, pwd string) error {
+	return tclient(20003).Login(username, pwd, "tlnet.top", "web", 1, nil)
 }
 
 func Test_LoginByToken(t *testing.T) {
-	tclient().LoginByToken("aJsLRe81X1M", "webapp", 1, nil)
+	domain := "tlnet.top"
+	tclient().LoginByToken("tom1", "h3NZByXYMA9", &domain, "webapp", 1, nil)
 	time.Sleep(3 * time.Second)
 }
 
