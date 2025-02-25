@@ -160,8 +160,8 @@ func (ts *tx) loginByAccount(username, pwd, domain, resource string, termtyp int
 
 // login with token
 // 使用token登录
-func (ts *tx) loginByToken(token string, resource string, termtyp int8, extend map[string]string) []byte {
-	ts.ta.Token, ts.ta.Resource, ts.ta.Termtyp, ts.ta.Extend = &token, &resource, &termtyp, extend
+func (ts *tx) loginByToken(username, token string, domain *string, resource string, termtyp int8, extend map[string]string) []byte {
+	ts.ta.Name, ts.ta.Token, ts.ta.Domain, ts.ta.Resource, ts.ta.Termtyp, ts.ta.Extend = &username, &token, domain, &resource, &termtyp, extend
 	buf := NewBuffer()
 	buf.WriteByte(byte(TIMAUTH))
 	buf.Write(thrift.TEncode(ts.ta))
