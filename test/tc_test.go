@@ -13,7 +13,7 @@ import (
 )
 
 func tclient(ports ...int) *timgo.TimClient {
-	port := 50001
+	port := 20003
 	if len(ports) > 0 {
 		port = ports[0]
 	}
