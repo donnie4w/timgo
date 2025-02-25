@@ -13,8 +13,17 @@ import (
 func TestMessageToUser(t *testing.T) {
 	tc := tclient()
 	tc.Login("tim1", "123", "tlnet.top", "android", 1, nil)
-	tc.MessageToUser("QdH6CCms5FV", "hello123456哈", 0, 0, nil, nil)
+	tc.MessageToUser("222", "hello123456哈", 0, 0, nil, nil)
 	time.Sleep(2 * time.Second)
+	t.Log(6)
+}
+
+func TestMessageToUserByToken(t *testing.T) {
+	tc := tclient()
+	domain := "tlnet.top"
+	tc.LoginByToken("222", "NRKxQdJEzAo", &domain, "android", 1, nil)
+	//tc.MessageToUser("222", "hello123456哈", 0, 0, nil, nil)
+	time.Sleep(20 * time.Second)
 	t.Log(6)
 }
 
