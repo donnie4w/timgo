@@ -135,6 +135,7 @@ func (tc *TimClient) closeconnect() (err error) {
 
 func (tc *TimClient) doMsg(t TIMTYPE, bs []byte) {
 	switch t {
+	case TIMPING:
 	case TIMACK:
 		if tc.ackHandler != nil {
 			if ta, err := thrift.TDecode(bs, &stub.TimAck{}); ta != nil {
